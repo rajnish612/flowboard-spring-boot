@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
+// Entity representing the REMOVEDs table in the database
 @Entity
 @Table(name = "REMOVEDs")
 @Data

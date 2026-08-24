@@ -13,11 +13,14 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+//CUSTOM OAUTH2 SUCCESS EXECUTED AFTER SUCCESSFULL OAUTH AUTHENTICATION
 @Component
 @RequiredArgsConstructor
 public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
     private final AuthService authService;
+    private final JwtService jwtService;
 
+    //   METHOD TO GENERATE JWT AND REDIRECT AFTER SUCCESSFULL OAUTH AUTHENTICATION
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
@@ -32,9 +35,10 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
                 .email(email)
                 .avatar(avatar)
                 .build();
-        User oauthUser = authService.oauthLogin(REMOVED);
+        User oauthUser = authService.retrieveUserThroughEmail(REMOVED);
+        String token = jwtService.generateToken(oauthUser.getEmail());
         response.sendRedirect(
-                "http://localhost:5173/oauth-success?token="
+                "http://localhost:5173/oauth-success?token=" + token
         );
     }
 }
