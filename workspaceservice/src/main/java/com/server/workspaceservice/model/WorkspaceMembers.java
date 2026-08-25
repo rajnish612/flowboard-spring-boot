@@ -31,8 +31,9 @@ public class WorkspaceMembers {
     @Column(nullable = false)
     private Long workspaceId;
 
+
     @Column(nullable = false)
-    private Long REMOVEDId;
+    private Long userId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

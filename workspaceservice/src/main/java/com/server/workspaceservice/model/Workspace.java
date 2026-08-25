@@ -25,7 +25,7 @@ public class Workspace {
     private String name;
 
     @Column(nullable = false)
-    private Long owner;
+    private Long ownerId;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

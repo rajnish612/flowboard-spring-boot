@@ -31,13 +31,14 @@ public class JwtService {
     }
 
     // Generate a signed JWT containing the REMOVED's email as the subject
-    public String generateToken(String email) {
+    public String generateToken(Long userId, String email) {
 
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
                 .subject(email)
+                .claim("userId", userId)
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(secretKey, Jwts.SIG.HS256)

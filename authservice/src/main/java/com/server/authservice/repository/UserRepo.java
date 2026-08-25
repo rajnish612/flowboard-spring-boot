@@ -7,6 +7,6 @@ import java.util.Optional;
 
 
 // Repository used to interact with the User table in the database
-public interface UserRepo extends JpaRepository<User, Integer> {
+public interface UserRepo extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 }

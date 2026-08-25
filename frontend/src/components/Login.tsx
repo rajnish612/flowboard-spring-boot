@@ -12,10 +12,7 @@ const Login: React.FC = () => {
     const testApi = async () => {
       try {
         const res = await fetch(AUTH_BASE_URL + "/api/auth/profile", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJybmlzaDYxMkBnbWFpbC5jb20iLCJpYXQiOjE3ODc1OTEzMzAsImV4cCI6MTc4NzU5MjIzMH0.h_I4fDikYm9eo-Q7exRJFVY5oYegKbrBl6pL2vocqN4`,
-          },
+          credentials: "include",
         });
         const data = await res.json();
         console.log("data", data);
