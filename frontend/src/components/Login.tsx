@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router";
 
-const AUTH_BASE_URL = "http://localhost:8000";
+const AUTH_BASE_URL = "http://localhost:8081";
 
 const Login: React.FC = () => {
   const location = useLocation();
@@ -9,13 +9,17 @@ const Login: React.FC = () => {
 
   const hasOauthError = searchParams.get("error") === "oauth";
   React.useEffect(() => {
+
+    //Test api to check jwt validation and retrieve user profile info
     const testApi = async () => {
       try {
-        const res = await fetch(AUTH_BASE_URL + "/api/auth/profile", {
-          credentials: "include",
-        });
+        const res = await fetch(
+          AUTH_BASE_URL + "/authservice/api/auth/profile",
+          {
+            credentials: "include",
+          },
+        );
         const data = await res.json();
-        console.log("data", data);
       } catch (err) {
         console.log("err: ", err);
       }
@@ -42,7 +46,7 @@ const Login: React.FC = () => {
 
             <div className="mt-8 flex flex-wrap gap-3">
               <a
-                href={`${AUTH_BASE_URL}/oauth2/authorization/google`}
+                href={`${AUTH_BASE_URL}/authservice/oauth2/authorization/google`}
                 className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
                 Continue with Google

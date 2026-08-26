@@ -26,6 +26,7 @@ public class AuthController {
     //Endpoint to fetch user profile from the db using user's id
     @GetMapping("/profile")
     public ResponseEntity<ProfileDTO> getProfile(@AuthenticationPrincipal Jwt authentication) {
+
         String email = authentication.getSubject();
         Long userId = authentication.getClaim("userId");
 

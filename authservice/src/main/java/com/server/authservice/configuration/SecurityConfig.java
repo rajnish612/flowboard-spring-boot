@@ -1,7 +1,6 @@
 package com.server.authservice.configuration;
 
 
-import com.server.authservice.service.CookieBearerTokenResolver;
 import com.server.authservice.service.Oauth2SuccessHandler;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -13,19 +12,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
 import javax.crypto.SecretKey;
-import java.util.List;
 
 
 //CUSTOM SECURITY CONFIG TO USED BY SPRING SECURITY
@@ -35,7 +27,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final Oauth2SuccessHandler oauth2SuccessHandler;
-    private final CookieBearerTokenResolver cookieBearerTokenResolver;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
@@ -44,39 +35,12 @@ public class SecurityConfig {
                     log.error("Login failed: {}", exception.getMessage());
                     response.sendRedirect("http://localhost:5173/login?error=oauth");
                 })).successHandler(oauth2SuccessHandler)) // CUSTOM HANDLER AFTER SUCCESSFUL OAUTH2 AUTHENTICATION
-                .oauth2ResourceServer(oauth -> oauth.bearerTokenResolver(cookieBearerTokenResolver)
+                .oauth2ResourceServer(oauth -> oauth
                         .jwt(jwt -> {
                         }));  // ENABLES JWT BEARER-TOKEN AUTHENTICATION
 
         ;
         return http.build();
-    }
-
-
-    //    CUSTOM CORS CONFIGURATION
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-
-        CorsConfiguration config = new CorsConfiguration();
-
-        config.setAllowedOrigins(
-                List.of("http://localhost:5173")
-        );
-
-        config.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        );
-
-        config.setAllowedHeaders(
-                List.of("Authorization", "Content-Type")
-        );
-        config.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
-        source.registerCorsConfiguration("/**", config);
-
-        return source;
     }
 
 

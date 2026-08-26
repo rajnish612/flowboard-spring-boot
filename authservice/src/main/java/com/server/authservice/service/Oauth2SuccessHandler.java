@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.time.Duration;
 
 //CUSTOM OAUTH2 SUCCESS EXECUTED AFTER SUCCESSFULL OAUTH AUTHENTICATION
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
@@ -49,7 +51,7 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString()); //Saving the token inside cookie
-
+        log.info("OAuth login successful for {}, redirecting to React", email);
         response.sendRedirect("http://localhost:5173/oauth-success");
 
     }
