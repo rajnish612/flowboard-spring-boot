@@ -8,24 +8,7 @@ const Login: React.FC = () => {
   const searchParams = new URLSearchParams(location.search);
 
   const hasOauthError = searchParams.get("error") === "oauth";
-  React.useEffect(() => {
 
-    //Test api to check jwt validation and retrieve user profile info
-    const testApi = async () => {
-      try {
-        const res = await fetch(
-          AUTH_BASE_URL + "/authservice/api/auth/profile",
-          {
-            credentials: "include",
-          },
-        );
-        const data = await res.json();
-      } catch (err) {
-        console.log("err: ", err);
-      }
-    };
-    testApi();
-  }, []);
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#dbeafe_0%,#f8fafc_45%,#ffffff_100%)] px-4 py-10 sm:px-6">
       <section className="mx-auto w-full max-w-4xl rounded-3xl border border-slate-200/70 bg-white/80 shadow-[0_25px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur">
@@ -46,7 +29,7 @@ const Login: React.FC = () => {
 
             <div className="mt-8 flex flex-wrap gap-3">
               <a
-                href={`${AUTH_BASE_URL}/authservice/oauth2/authorization/google`}
+                href={`${AUTH_BASE_URL}/oauth2/authorization/google`}
                 className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
                 Continue with Google
