@@ -31,7 +31,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http.csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults()).formLogin(formLogin -> formLogin.disable()).authorizeHttpRequests(auth -> auth.requestMatchers("/login/**", "/oauth2/**").permitAll().anyRequest().authenticated()).oauth2Login(oauth -> oauth.failureHandler(((request, response, exception) -> {
+                .formLogin(formLogin -> formLogin.disable()).authorizeHttpRequests(auth -> auth.requestMatchers("/login/**", "/oauth2/**").permitAll().anyRequest().authenticated()).oauth2Login(oauth -> oauth.failureHandler(((request, response, exception) -> {
                     log.error("Login failed: {}", exception.getMessage());
                     response.sendRedirect("http://localhost:5173/login?error=oauth");
                 })).successHandler(oauth2SuccessHandler)) // CUSTOM HANDLER AFTER SUCCESSFUL OAUTH2 AUTHENTICATION

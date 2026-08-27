@@ -25,39 +25,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http.csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults())// CUSTOM HANDLER AFTER SUCCESSFUL OAUTH2 AUTHENTICATION
+                .formLogin(formLogin -> formLogin.disable())
+                // CUSTOM HANDLER AFTER SUCCESSFUL OAUTH2 AUTHENTICATION
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> {
                 }));  // ENABLES JWT BEARER-TOKEN AUTHENTICATION
 
         ;
         return http.build();
-    }
-
-
-    //    CUSTOM CORS CONFIGURATION
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-
-        CorsConfiguration config = new CorsConfiguration();
-
-        config.setAllowedOrigins(
-                List.of("http://localhost:5173")
-        );
-
-        config.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        );
-
-        config.setAllowedHeaders(
-                List.of("Authorization", "Content-Type")
-        );
-        config.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
-        source.registerCorsConfiguration("/**", config);
-
-        return source;
     }
 
 

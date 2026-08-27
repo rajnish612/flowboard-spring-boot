@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProfileDTO {
+    private long id;
     private String email;
     private String name;
     private String avatar;

@@ -15,7 +15,7 @@ import java.util.List;
 //Handle request and response for workspaces
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/workspace")
+@RequestMapping("/")
 public class WorkspaceController {
     private final WorkspaceService workspaceService;
 

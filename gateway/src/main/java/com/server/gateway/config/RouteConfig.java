@@ -13,6 +13,7 @@ import static org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFu
 import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
 import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions.http;
 
+import static org.springframework.cloud.gateway.server.mvc.predicate.GatewayRequestPredicates.path;
 
 //Custom configuration to manage routes of microservice
 @Configuration
@@ -52,6 +53,17 @@ public class RouteConfig {
         return route("oauth-callback")
                 .GET("/login/**", http())
                 .filter(lb("authservice"))
+                .build();
+    }
+
+    //Route for workspace service
+    @Bean
+    public RouterFunction<ServerResponse> workspaceRoute() {
+        return route("workspaceservice")
+                .route(path("/api/workspace/**"), http())
+                .before(JwtCookieFilter.addJwtToHeader())
+                .before(stripPrefix(2))
+                .filter(lb("workspaceservice"))
                 .build();
     }
 

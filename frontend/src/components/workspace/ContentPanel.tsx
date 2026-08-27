@@ -6,7 +6,6 @@ const ContentPanel = () => {
   const workspaceName = "My Workspace";
   const workspaceInitial = workspaceName.charAt(0).toUpperCase();
   const { user } = useAuth();
-  console.log("user", user);
 
   return (
     <div className="flex-1 flex flex-col bg-gray-50 min-h-screen overflow-y-auto relative">

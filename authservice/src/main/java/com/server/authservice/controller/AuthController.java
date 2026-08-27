@@ -33,7 +33,7 @@ public class AuthController {
         log.info("Authenticated user with email: {}", email);
         assert userId != null;
         User user = userRepo.findById(userId).orElseThrow(() -> new UsernameNotFoundException("Email not found "));
-        ProfileDTO profile = ProfileDTO.builder().name(user.getName()).email(user.getEmail()).avatar(user.getAvatar()).build();
+        ProfileDTO profile = ProfileDTO.builder().name(user.getName()).email(user.getEmail()).avatar(user.getAvatar()).id(user.getId()).build();
         log.info("Retrieved profile for user with email: {}", email);
         return ResponseEntity.ok(profile);
     }

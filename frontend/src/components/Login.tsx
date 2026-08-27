@@ -1,14 +1,35 @@
 import React from "react";
-import { Link, useLocation } from "react-router";
+import { Link, Navigate, useLocation, useNavigate } from "react-router";
+import { axiosIns } from "../utils/axiosInstance";
 
 const AUTH_BASE_URL = "http://localhost:8081";
 
 const Login: React.FC = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const navigate = useNavigate();
   const hasOauthError = searchParams.get("error") === "oauth";
-
+  React.useEffect(() => {
+    // Checking whether the user is already logged in or not
+    axiosIns
+      .get("/api/auth/profile")
+      .then((res) => {
+        if (res.data) {
+          navigate("/dashboard", { replace: true });
+        }
+      })
+      .catch((err) => {
+        console.log(
+          "err in check logged in or not in Login component: /api/profile",
+          err.message,
+        );
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [navigate]);
+  if (loading) return <div>Loading</div>; //Return a loading state ui while checking the user is logged in or not
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#dbeafe_0%,#f8fafc_45%,#ffffff_100%)] px-4 py-10 sm:px-6">
       <section className="mx-auto w-full max-w-4xl rounded-3xl border border-slate-200/70 bg-white/80 shadow-[0_25px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur">
