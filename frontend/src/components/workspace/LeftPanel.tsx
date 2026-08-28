@@ -2,8 +2,10 @@
 import React, { useState } from "react";
 import { useAuth } from "../../hooks/UseAuth";
 import { axiosIns } from "../../utils/axiosInstance";
+import { Link } from "react-router";
 
 type WorkSpace = {
+  id?: number;
   ownerId: number;
   name: string;
 };
@@ -11,15 +13,21 @@ type WorkSpace = {
 const initialWorkspaces: WorkSpace[] = [];
 
 const dropdownOptions = [
-  { label: "Boards", icon: "M3 7h18M3 12h18M3 17h9" },
-  { label: "Activity", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
+  { label: "Boards", icon: "M3 7h18M3 12h18M3 17h9", path: "boards" },
+  {
+    label: "Activity",
+    icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
+    path: "boards",
+  },
   {
     label: "Settings",
     icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
+    path: "boards",
   },
   {
     label: "Billing",
     icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
+    path: "boards",
   },
 ];
 
@@ -40,12 +48,12 @@ const LeftPanel: React.FC = () => {
     try {
       const res = await axiosIns.post("/api/workspace/create", newWorkspace);
       setWorkspaces((prev) => [...prev, res.data]);
-      console.log("workspace created", res.data);
     } catch (err) {
       console.log("unable to create workspace", err.response.data.message);
     }
   };
-  const toggleDropdown = (id: number) => {
+  const toggleDropdown = (id?: number) => {
+    if (!id) return;
     setOpenDropdownId((prev) => (prev === id ? null : id));
   };
 
@@ -59,6 +67,7 @@ const LeftPanel: React.FC = () => {
       )
       .finally(() => setFetchingWorkspaces(false));
   }, []);
+
   return (
     <>
       <aside className="w-64 min-w-[16rem] bg-white shadow-lg py-4 flex flex-col">
@@ -158,7 +167,8 @@ const LeftPanel: React.FC = () => {
               {openDropdownId === ws.id && (
                 <div className="ml-9 mt-0.5 flex flex-col space-y-0.5">
                   {dropdownOptions.map((opt) => (
-                    <button
+                    <Link
+                      to={`${opt.path + "/" + ws.id}`}
                       key={opt.label}
                       className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors w-full text-left"
                     >
@@ -177,7 +187,7 @@ const LeftPanel: React.FC = () => {
                         />
                       </svg>
                       <span>{opt.label}</span>
-                    </button>
+                    </Link>
                   ))}
                 </div>
               )}

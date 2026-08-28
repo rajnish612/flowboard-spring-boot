@@ -25,7 +25,7 @@ const App = () => {
               </ProtectedRoute>
             }
           >
-            <Route path="boards" element={<Boards />} />
+            <Route path="boards/:workspaceId" element={<Boards />} />
           </Route>
           <Route path="board/:boardId" element={<Board />} />
         </Routes>

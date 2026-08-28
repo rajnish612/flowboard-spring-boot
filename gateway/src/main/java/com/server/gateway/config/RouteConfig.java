@@ -58,12 +58,22 @@ public class RouteConfig {
 
     //Route for workspace service
     @Bean
-    public RouterFunction<ServerResponse> workspaceRoute() {
+    public RouterFunction<ServerResponse> workspaceServiceRoute() {
         return route("workspaceservice")
                 .route(path("/api/workspace/**"), http())
                 .before(JwtCookieFilter.addJwtToHeader())
                 .before(stripPrefix(2))
                 .filter(lb("workspaceservice"))
+                .build();
+    }
+    //Route for task service
+    @Bean
+    public RouterFunction<ServerResponse> taskServiceRoute() {
+        return route("taskservice")
+                .route(path("/api/task/**"), http())
+                .before(JwtCookieFilter.addJwtToHeader())
+                .before(stripPrefix(2))
+                .filter(lb("taskservice"))
                 .build();
     }
 

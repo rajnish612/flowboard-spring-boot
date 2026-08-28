@@ -22,6 +22,7 @@ public class WorkspaceController {
     //End point to create a workspace
     @PostMapping("create")
     public ResponseEntity<WorkspaceDTO> createWorkspace(@RequestBody WorkspaceDTO workspace) {
+
         WorkspaceDTO newWorkspace = workspaceService.createWorkspace(workspace);
         return ResponseEntity.ok(newWorkspace);
     }
