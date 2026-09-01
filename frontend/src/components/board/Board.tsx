@@ -578,10 +578,12 @@ const Board: React.FC = () => {
             (l) =>
               axiosIns
                 .get<Card[]>(`${BASE}/card/${l.id}`)
-                .then((r) => [[l.id, r.data] as [number, Card[]]]),
+                .then((r) => [l.id, r.data] as [number, Card[]]),
             // api.fetchCards(l.id).then((c) => [l.id, c] as [number, Card[]]),
           ),
         );
+        console.log("entries", entries);
+
         setCards(Object.fromEntries(entries));
         setLoading(true);
       } catch (err) {

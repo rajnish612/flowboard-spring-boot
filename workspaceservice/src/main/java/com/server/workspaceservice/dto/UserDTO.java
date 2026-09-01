@@ -1,19 +1,21 @@
-package com.server.authservice.dto;
+package com.server.workspaceservice.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
-//DATA TRANSFER OBJECT TO RETURN USER INFO AS HTTP RESPONSE
 @Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProfileDTO {
+public class UserDTO {
+
+
     private Long id;
     private String email;
     private String name;
     private String avatar;
+
+
 }

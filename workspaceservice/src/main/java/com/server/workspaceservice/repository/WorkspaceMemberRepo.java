@@ -11,4 +11,8 @@ import java.util.List;
 @Repository
 public interface WorkspaceMemberRepo extends JpaRepository<WorkspaceMembers, Long> {
     List<WorkspaceMembers> findByUserId(Long id);
+
+
+    //Fetch members using workspace id;
+    List<WorkspaceMembers> findByWorkspaceId(Long id);
 }

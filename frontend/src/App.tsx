@@ -5,6 +5,7 @@ import Login from "./components/Login";
 import { AuthProvider } from "./providers/AuthProvider";
 import Dashboard from "./components/workspace/Dashboard";
 import { ProtectedRoute } from "./wrappers/ProtectedRoute";
+import Members from "./components/workspace/contents/Members";
 
 const App = () => {
   return (
@@ -26,6 +27,7 @@ const App = () => {
             }
           >
             <Route path="boards/:workspaceId" element={<Boards />} />
+            <Route path="members/:workspaceId" element={<Members />} />
           </Route>
           <Route
             path="board/:boardId"

@@ -1,6 +1,8 @@
 package com.server.workspaceservice.controller;
 
+import com.server.workspaceservice.dto.AddMemberDTO;
 import com.server.workspaceservice.dto.BoardDTO;
+import com.server.workspaceservice.dto.UserDTO;
 import com.server.workspaceservice.dto.WorkspaceDTO;
 import com.server.workspaceservice.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,12 @@ public class WorkspaceController {
 
     }
 
+    //End point to fetch members using workspace id
+    @GetMapping("/member/{workspaceId}")
+    public ResponseEntity<List<UserDTO>> getMembersByWorkspaceId(@PathVariable Long workspaceId) {
+        return ResponseEntity.ok(workspaceService.getWorkspaceMembersByWorkspaceId(workspaceId));
+    }
+
     //Endpoint to fetch all shared workspaces
     @GetMapping("/shared")
     public ResponseEntity<List<WorkspaceDTO>> getSharedWorkspaces(
@@ -50,6 +58,13 @@ public class WorkspaceController {
         return ResponseEntity.ok(
                 workspaceService.getSharedWorkspaces(userId)
         );
+    }
+
+
+    //Endpoint to add member to the workspace
+    @PostMapping("/member")
+    public ResponseEntity<UserDTO> addMember(@RequestBody AddMemberDTO addMemberDTO) {
+        return ResponseEntity.ok(workspaceService.addMember(addMemberDTO));
     }
 
 }

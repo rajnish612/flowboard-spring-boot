@@ -3,6 +3,7 @@ package com.server.authservice.controller;
 import com.server.authservice.model.User;
 import com.server.authservice.dto.ProfileDTO;
 import com.server.authservice.repository.UserRepo;
+import com.server.authservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -10,9 +11,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final UserRepo userRepo;
-
+    private final UserService userService;
 
     //Endpoint to fetch user profile from the db using user's id
     @GetMapping("/profile")
@@ -36,5 +37,21 @@ public class AuthController {
         ProfileDTO profile = ProfileDTO.builder().name(user.getName()).email(user.getEmail()).avatar(user.getAvatar()).id(user.getId()).build();
         log.info("Retrieved profile for user with email: {}", email);
         return ResponseEntity.ok(profile);
+    }
+
+
+    //Endpoint to get multiple users through userIds
+    @PostMapping("/users")
+    public ResponseEntity<List<ProfileDTO>> getUsers(@RequestBody List<Long> userIds) {
+
+        return ResponseEntity.ok(
+                userService.getUsersByIds(userIds)
+        );
+    }
+
+    //Endpoint to get  user through email
+    @GetMapping("/user/{email}")
+    public ResponseEntity<ProfileDTO> getUserByEmail(@PathVariable("email") String email) {
+        return ResponseEntity.ok(userService.getUserByEmail(email));
     }
 }

@@ -1,7 +1,6 @@
 package com.server.workspaceservice.dto;
 
 
-import com.server.workspaceservice.model.WorkspaceRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,6 +16,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class WorkspaceMembersDTO {
     private Long id;
+    private String email;
+    private String avatar;
+    private String name;
 
     private Long workspaceId;
 
@@ -24,7 +26,6 @@ public class WorkspaceMembersDTO {
     private Long userId;
 
 
-    private WorkspaceRole role;
 
 
     private LocalDateTime joinedAt;
