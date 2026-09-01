@@ -40,5 +40,16 @@ public class WorkspaceController {
 
     }
 
+    //Endpoint to fetch all shared workspaces
+    @GetMapping("/shared")
+    public ResponseEntity<List<WorkspaceDTO>> getSharedWorkspaces(
+            @AuthenticationPrincipal Jwt jwt) {
+
+        Long userId = jwt.getClaim("userId");
+
+        return ResponseEntity.ok(
+                workspaceService.getSharedWorkspaces(userId)
+        );
+    }
 
 }

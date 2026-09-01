@@ -1,6 +1,6 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { axiosIns } from "../../../utils/axiosInstance";
-import { useParams } from "react-router";
+import { useParams, Link } from "react-router";
 import { isAxiosError } from "axios";
 
 type Board = {
@@ -171,11 +171,12 @@ const Boards: React.FC = () => {
       {/* Board grid */}
       <div className="flex flex-wrap gap-4">
         {boards.map((board) => (
-          <BoardCard
-            description={board.description}
-            key={board.name}
-            name={board.name}
-          />
+          <Link key={board.id ?? board.name} to={`/board/${board.id}`}>
+            <BoardCard
+              description={board.description}
+              name={board.name}
+            />
+          </Link>
         ))}
         <CreateBoardCard onClick={() => setIsCreateModalOpen(true)} />
       </div>

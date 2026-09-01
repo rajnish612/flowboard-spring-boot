@@ -27,7 +27,14 @@ const App = () => {
           >
             <Route path="boards/:workspaceId" element={<Boards />} />
           </Route>
-          <Route path="board/:boardId" element={<Board />} />
+          <Route
+            path="board/:boardId"
+            element={
+              <ProtectedRoute>
+                <Board />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

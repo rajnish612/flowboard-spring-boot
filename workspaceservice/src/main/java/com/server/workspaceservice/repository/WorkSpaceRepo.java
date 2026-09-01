@@ -11,7 +11,8 @@ import java.util.List;
 //Repository to interact with the workspace table
 @Repository
 public interface WorkSpaceRepo extends JpaRepository<Workspace, Long> {
-
+    //Find workspaces using list of workspace id
+    List<Workspace> findByIdIn(List<Long> ids);
     //Find workspace using ownerId
     List<Workspace> findByOwnerId(Long ownerId);
 

@@ -3,8 +3,10 @@ package com.server.workspaceservice.service;
 import com.server.workspaceservice.dto.BoardDTO;
 import com.server.workspaceservice.dto.WorkspaceDTO;
 import com.server.workspaceservice.model.Workspace;
+import com.server.workspaceservice.model.WorkspaceMembers;
 import com.server.workspaceservice.repository.BoardRepo;
 import com.server.workspaceservice.repository.WorkSpaceRepo;
+import com.server.workspaceservice.repository.WorkspaceMemberRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,7 @@ public class WorkspaceService {
 
     private final WorkSpaceRepo workSpaceRepo;
     private final BoardRepo boardRepo;
+    private final WorkspaceMemberRepo workspaceMemberRepo;
 
     //Method to create new workspace
     public WorkspaceDTO createWorkspace(WorkspaceDTO workspaceDTO) {
@@ -45,6 +48,29 @@ public class WorkspaceService {
                 .createdAt(w.getCreatedAt())
                 .updatedAt(w.getUpdatedAt())
                 .build()).toList();
+    }
+
+
+    //Method to get all the shared workspaces
+    public List<WorkspaceDTO> getSharedWorkspaces(Long userId) {
+
+        List<Long> workspaceIds = workspaceMemberRepo.findByUserId(userId)
+                .stream()
+                .map(WorkspaceMembers::getWorkspaceId)
+                .toList();
+
+        if (workspaceIds.isEmpty()) {
+            return List.of();
+        }
+
+        return workSpaceRepo.findByIdIn(workspaceIds)
+                .stream()
+                .map(workspace -> WorkspaceDTO.builder()
+                        .id(workspace.getId())
+                        .name(workspace.getName())
+                        .ownerId(workspace.getOwnerId())
+                        .build())
+                .toList();
     }
 
 

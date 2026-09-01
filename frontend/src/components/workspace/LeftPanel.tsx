@@ -4,6 +4,34 @@ import { useAuth } from "../../hooks/UseAuth";
 import { axiosIns } from "../../utils/axiosInstance";
 import { Link } from "react-router";
 
+type WorkspaceView = "mine" | "shared";
+type WorkspaceToggleProps = {
+  activeView: WorkspaceView;
+  onChange: (view: WorkspaceView) => void;
+};
+const WorkspaceToggle = ({ activeView, onChange }: WorkspaceToggleProps) => {
+  return (
+    <div className="flex p-1 bg-gray-100 rounded-lg">
+      {" "}
+      <button
+        type="button"
+        onClick={() => onChange("mine")}
+        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${activeView === "mine" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+      >
+        {" "}
+        My Workspaces{" "}
+      </button>{" "}
+      <button
+        type="button"
+        onClick={() => onChange("shared")}
+        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${activeView === "shared" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+      >
+        {" "}
+        Shared With Me{" "}
+      </button>{" "}
+    </div>
+  );
+};
 type WorkSpace = {
   id?: number;
   ownerId: number;
@@ -34,6 +62,7 @@ const dropdownOptions = [
 const LeftPanel: React.FC = () => {
   const [fetchingWorkspaces, setFetchingWorkspaces] = useState<boolean>(true);
   const [workspaces, setWorkspaces] = useState<WorkSpace[]>(initialWorkspaces);
+  const [activeView, setActiveView] = useState<WorkspaceView>("mine");
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [workspaceName, setWorkspaceName] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -59,14 +88,22 @@ const LeftPanel: React.FC = () => {
 
   React.useEffect(() => {
     //Function to load workspaces during component render
-    axiosIns
-      .get("/api/workspace")
-      .then((res) => setWorkspaces(res.data))
-      .catch((err) =>
-        console.log("Unable to ferch workspaces", err.response.data.message),
-      )
-      .finally(() => setFetchingWorkspaces(false));
-  }, []);
+
+    const fetchWorkspaces = async () => {
+      const fetchWorkspacesApi =
+        activeView === "shared" ? "/api/workspace/shared" : "/api/workspace";
+      setFetchingWorkspaces(true);
+      try {
+        const res = await axiosIns.get(fetchWorkspacesApi);
+        setWorkspaces(res.data);
+      } catch (err) {
+        console.log("Unable to ferch workspaces", err.response.data.message);
+      } finally {
+        setFetchingWorkspaces(false);
+      }
+    };
+    fetchWorkspaces();
+  }, [activeView]);
 
   return (
     <>
@@ -99,6 +136,11 @@ const LeftPanel: React.FC = () => {
 
         {/* Nav */}
         <nav className="px-3 space-y-1 flex-1 overflow-y-auto">
+          {/* Toggle workspaces between myWorkspaces and shared workspaces */}
+          <WorkspaceToggle
+            activeView={activeView}
+            onChange={(currentView) => setActiveView(currentView)}
+          />
           {/* Workspace section header */}
           <div className="flex items-center justify-between px-2 py-1 mb-1">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
