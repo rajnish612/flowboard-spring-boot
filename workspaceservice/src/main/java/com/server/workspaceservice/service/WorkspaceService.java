@@ -2,6 +2,7 @@ package com.server.workspaceservice.service;
 
 import com.server.workspaceservice.client.AuthClient;
 import com.server.workspaceservice.dto.*;
+import com.server.workspaceservice.model.Board;
 import com.server.workspaceservice.model.Workspace;
 import com.server.workspaceservice.model.WorkspaceMembers;
 import com.server.workspaceservice.repository.BoardRepo;

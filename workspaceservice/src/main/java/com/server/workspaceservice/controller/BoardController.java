@@ -27,6 +27,18 @@ public class BoardController {
         return ResponseEntity.ok(boards);
     }
 
+
+    //Endpoint to check if the user has access to board or not using board and user Id
+    @GetMapping("/{boardId}/access")
+    public ResponseEntity<Boolean> hasBoardAccess(
+            @PathVariable Long boardId,
+            @RequestParam Long userId) {
+
+        return ResponseEntity.ok(
+                boardService.hasUserAccessToBoard(boardId, userId)
+        );
+    }
+
     //    Endpoint to create board
     @PostMapping("/create")
     public ResponseEntity<BoardDTO> createBoard(@AuthenticationPrincipal Jwt jwt, @RequestBody BoardDTO boardDTO) {

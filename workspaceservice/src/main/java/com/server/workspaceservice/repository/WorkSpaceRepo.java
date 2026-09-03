@@ -13,6 +13,7 @@ import java.util.List;
 public interface WorkSpaceRepo extends JpaRepository<Workspace, Long> {
     //Find workspaces using list of workspace id
     List<Workspace> findByIdIn(List<Long> ids);
+
     //Find workspace using ownerId
     List<Workspace> findByOwnerId(Long ownerId);
 
@@ -25,4 +26,7 @@ public interface WorkSpaceRepo extends JpaRepository<Workspace, Long> {
             """)
     Boolean checkIsOwner(@Param("ownerId") Long ownerId, @Param("workspaceId") Long workspaceId);
 
+
+    //Check if the user is owner of the workspace
+    boolean existsByIdAndOwnerId(Long workspaceId, Long ownerId);
 }

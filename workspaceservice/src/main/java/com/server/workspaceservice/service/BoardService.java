@@ -4,7 +4,9 @@ import com.server.workspaceservice.dto.BoardDTO;
 import com.server.workspaceservice.model.Board;
 import com.server.workspaceservice.repository.BoardRepo;
 import com.server.workspaceservice.repository.WorkSpaceRepo;
+import com.server.workspaceservice.repository.WorkspaceMemberRepo;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import org.springframework.security.access.AccessDeniedException;
@@ -18,6 +20,7 @@ public class BoardService {
 
     private final BoardRepo boardRepo;
     private final WorkSpaceRepo workSpaceRepo;
+    private final WorkspaceMemberRepo workspaceMemberRepo;
 
     //Method to get boards by workspace id
     public List<BoardDTO> getBoardsByWorkspaceId(Long workspaceId) {
@@ -52,5 +55,30 @@ public class BoardService {
 
         boardRepo.save(newBoard);
         return boardDTO;
+
+    }
+
+    //Method to check if user has the access to board or not using board and user Id
+    public boolean hasUserAccessToBoard(Long boardId, Long userId) {
+
+        Board board = boardRepo.findById(boardId)
+                .orElseThrow(() ->
+                        new RuntimeException("Board not found"));
+
+        Long workspaceId = board.getWorkspaceId();
+
+        boolean isOwner =
+                workSpaceRepo.existsByIdAndOwnerId(
+                        workspaceId,
+                        userId
+                );//Check if user is owner
+
+        boolean isMember =
+                workspaceMemberRepo.existsByWorkspaceIdAndUserId(
+                        workspaceId,
+                        userId
+                );//Check if user is the member 
+
+        return isOwner || isMember;
     }
 }

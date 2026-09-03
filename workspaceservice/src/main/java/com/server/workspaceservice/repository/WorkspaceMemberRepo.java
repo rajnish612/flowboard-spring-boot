@@ -15,4 +15,11 @@ public interface WorkspaceMemberRepo extends JpaRepository<WorkspaceMembers, Lon
 
     //Fetch members using workspace id;
     List<WorkspaceMembers> findByWorkspaceId(Long id);
+
+
+    //Check if user is a member of the workspace or not using workspaceId and userId
+    boolean existsByWorkspaceIdAndUserId(
+            Long workspaceId,
+            Long userId
+    );
 }

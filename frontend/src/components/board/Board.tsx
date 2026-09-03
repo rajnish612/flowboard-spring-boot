@@ -599,7 +599,7 @@ const Board: React.FC = () => {
   const handleAddList = useCallback(
     async (name: string) => {
       const res = await axiosIns.post<BoardList>(`${BASE}/list/create`, {
-        numericBoardId,
+        boardId: numericBoardId,
         name,
       });
       const newList = res.data;
