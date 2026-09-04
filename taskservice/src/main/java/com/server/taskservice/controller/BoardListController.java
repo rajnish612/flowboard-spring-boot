@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,9 @@ public class BoardListController {
     private final BoardListService boardListService;
 
     // GET /list/{boardId} — fetch all lists for a board
+    @PreAuthorize(
+            "@taskAuthorization.hasBoardAccess(#boardId, authentication)"
+    )
     @GetMapping("/{boardId}")
     public ResponseEntity<List<BoardListDTO>> getListsByBoardId(@PathVariable Long boardId) {
         log.info("Fetching lists for board {}", boardId);
@@ -28,6 +32,9 @@ public class BoardListController {
     }
 
     // POST /list/create — create a new list
+    @PreAuthorize(
+            "@taskAuthorization.hasBoardAccess(#dto.boardId, authentication)"
+    )
     @PostMapping("/create")
     public ResponseEntity<BoardListDTO> createList(@RequestBody BoardListDTO dto) {
         BoardListDTO created = boardListService.createList(dto);
@@ -35,6 +42,9 @@ public class BoardListController {
     }
 
     // PUT /list/{id} — update list name / position
+    @PreAuthorize(
+            "@taskAuthorization.hasListAccess(#id, authentication)"
+    )
     @PutMapping("/{id}")
     public ResponseEntity<BoardListDTO> updateList(@PathVariable Long id, @RequestBody BoardListDTO dto) {
         BoardListDTO updated = boardListService.updateList(id, dto);
@@ -42,6 +52,9 @@ public class BoardListController {
     }
 
     // DELETE /list/{id} — delete a list and all its cards
+    @PreAuthorize(
+            "@taskAuthorization.hasListAccess(#id, authentication)"
+    )
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteList(@PathVariable Long id) {
         boardListService.deleteList(id);
@@ -50,6 +63,9 @@ public class BoardListController {
 
     // PATCH /list/{id}/reorder — move a list to a new position
     @PatchMapping("/{id}/reorder")
+    @PreAuthorize(
+            "@taskAuthorization.hasListAccess(#id, authentication)"
+    )
     public ResponseEntity<BoardListDTO> reorderList(
             @PathVariable Long id,
             @RequestBody Map<String, Integer> body) {

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,9 @@ public class CardController {
     private final CardService cardService;
 
     // GET /card/{listId} — fetch all cards in a list
+    @PreAuthorize(
+            "@taskAuthorization.hasListAccess(#listId, authentication)"
+    )
     @GetMapping("/{listId}")
     public ResponseEntity<List<CardDTO>> getCardsByListId(@PathVariable Long listId) {
         log.info("Fetching cards for list {}", listId);
@@ -35,6 +39,9 @@ public class CardController {
     }
 
     // PUT /card/{id} — update card fields
+    @PreAuthorize(
+            "@taskAuthorization.hasCardAccess(#id, authentication)"
+    )
     @PutMapping("/{id}")
     public ResponseEntity<CardDTO> updateCard(@PathVariable Long id, @RequestBody CardDTO dto) {
         CardDTO updated = cardService.updateCard(id, dto);
@@ -42,6 +49,9 @@ public class CardController {
     }
 
     // DELETE /card/{id} — delete a card
+    @PreAuthorize(
+            "@taskAuthorization.hasCardAccess(#id, authentication)"
+    )
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCard(@PathVariable Long id) {
         cardService.deleteCard(id);
@@ -50,6 +60,9 @@ public class CardController {
 
     // PATCH /card/{id}/move — move a card to a different list / position
     // Request body: { "targetListId": 2, "position": 0 }
+    @PreAuthorize(
+            "@taskAuthorization.hasCardAccess(#id, authentication)"
+    )
     @PatchMapping("/{id}/move")
     public ResponseEntity<CardDTO> moveCard(
             @PathVariable Long id,
