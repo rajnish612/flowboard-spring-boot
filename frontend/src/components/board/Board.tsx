@@ -718,9 +718,9 @@ const Board: React.FC = () => {
 
       // Sync to backend
       axiosIns
-        .patch<Card>(`${BASE}/card/${card.id}/move`, {
+        .post<Card>(`${BASE}/card/${card.id}/move`, {
           targetListId,
-          targetPosition,
+          position: targetPosition,
         })
         .then((r) => r.data);
 

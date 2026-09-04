@@ -60,10 +60,7 @@ public class CardController {
 
     // PATCH /card/{id}/move — move a card to a different list / position
     // Request body: { "targetListId": 2, "position": 0 }
-    @PreAuthorize(
-            "@taskAuthorization.hasCardAccess(#id, authentication)"
-    )
-    @PatchMapping("/{id}/move")
+    @PostMapping("/{id}/move")
     public ResponseEntity<CardDTO> moveCard(
             @PathVariable Long id,
             @RequestBody Map<String, Object> body) {
