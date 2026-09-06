@@ -34,7 +34,7 @@ public class Board {
     private String description;
 
     @Column(nullable = false)
-    private Long createdBy;
+    private String backgroundImage;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

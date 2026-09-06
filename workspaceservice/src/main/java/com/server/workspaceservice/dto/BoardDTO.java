@@ -24,8 +24,7 @@ public class BoardDTO {
 
     private String description;
 
-
-    private Long createdBy;
+    private String backgroundImage;
 
     private LocalDateTime createdAt;
 

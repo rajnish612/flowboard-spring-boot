@@ -32,6 +32,7 @@ public class BoardService {
                         .id(b.getId())
                         .workspaceId(b.getWorkspaceId())
                         .name(b.getName())
+                        .backgroundImage(b.getBackgroundImage())
                         .build()).toList();
     }
 
@@ -49,7 +50,6 @@ public class BoardService {
                 .workspaceId(board.getWorkspaceId())
                 .name(board.getName())
                 .description(board.getDescription())
-                .createdBy(board.getCreatedBy())
                 .createdAt(board.getCreatedAt())
                 .updatedAt(board.getUpdatedAt())
                 .build();
@@ -70,8 +70,8 @@ public class BoardService {
         Board newBoard = Board.builder()
                 .name(boardDTO.getName())
                 .description(boardDTO.getDescription())
+                .backgroundImage(boardDTO.getBackgroundImage())
                 .workspaceId(boardDTO.getWorkspaceId())
-                .createdBy(userId)
                 .build();
 
         boardRepo.save(newBoard);

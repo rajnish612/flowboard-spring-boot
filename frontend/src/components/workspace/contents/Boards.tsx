@@ -2,17 +2,25 @@ import React, { useState } from "react";
 import { axiosIns } from "../../../utils/axiosInstance";
 import { useParams, Link } from "react-router";
 import { isAxiosError } from "axios";
-
+const backgrounds = [
+  "/board-backgrounds/mountain.jpg",
+  "/board-backgrounds/ocean.jpg",
+  "/board-backgrounds/forest.jpg",
+  "/board-backgrounds/city.jpg",
+  "/board-backgrounds/abstract.jpg",
+];
 type Board = {
   id?: number;
   name: string;
   description: string;
+  backgroundImage: string;
 };
 
-const BoardCard: React.FC<Board> = ({ name }) => {
+const BoardCard: React.FC<Board> = ({ backgroundImage, name }) => {
   return (
     <div
-      className={`relative w-52 h-32 rounded-xl bg-blue-100 cursor-pointer shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-hidden group`}
+      style={{ backgroundImage: `url(${backgroundImage})` }}
+      className={`relative w-52 h-32 rounded-xl bg-cover bg-blue-100 cursor-pointer shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-hidden group`}
     >
       {/* Board title */}
       <span className="absolute top-3 left-3 text-white font-semibold text-sm drop-shadow">
@@ -84,6 +92,7 @@ const Boards: React.FC = () => {
   });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [selectedBackground, setSelectedBackground] = useState(backgrounds[0]);
   React.useEffect(() => {
     //Method to fetch initial boards based on the selected workspace
     axiosIns
@@ -105,6 +114,7 @@ const Boards: React.FC = () => {
     const newBoard: Board & { workspaceId: number } = {
       name,
       description,
+      backgroundImage: selectedBackground,
       workspaceId: currentWorkspaceId,
     };
 
@@ -120,6 +130,7 @@ const Boards: React.FC = () => {
           name: "",
           description: "",
         });
+        setSelectedBackground(backgrounds[0]);
 
         setIsCreateModalOpen(false);
       }
@@ -144,6 +155,7 @@ const Boards: React.FC = () => {
       name: "",
       description: "",
     });
+    setSelectedBackground(backgrounds[0]);
 
     setIsCreateModalOpen(false);
   };
@@ -173,6 +185,7 @@ const Boards: React.FC = () => {
         {boards.map((board) => (
           <Link key={board.id ?? board.name} to={`/board/${board.id}`}>
             <BoardCard
+              backgroundImage={board.backgroundImage}
               description={board.description}
               name={board.name}
             />
@@ -223,6 +236,38 @@ const Boards: React.FC = () => {
 
             {/* Form */}
             <div className="px-6 py-6 space-y-5">
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Choose a background
+                  </label>
+                  <span className="text-xs text-gray-400">Optional</span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {backgrounds.map((background) => (
+                    <button
+                      key={background}
+                      type="button"
+                      onClick={() => setSelectedBackground(background)}
+                      aria-label={`Select ${background.split("/").pop()?.split(".")[0]} background`}
+                      aria-pressed={selectedBackground === background}
+                      className={`relative h-20 overflow-hidden rounded-lg border-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-300 ${
+                        selectedBackground === background
+                          ? "border-indigo-600 ring-2 ring-indigo-100"
+                          : "border-transparent hover:border-indigo-300"
+                      }`}
+                    >
+                      <img
+                        src={background}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Board name
