@@ -76,9 +76,9 @@ public class WorkspaceService {
     }
 
     //Method to fetch members using workspaceId
-    public List<UserDTO> getWorkspaceMembersByWorkspaceId(Long workspaceId) {
+    public List<UserDTO> getWorkspaceMembersByWorkspaceId(Long workspaceId, Long userId) {
         List<WorkspaceMembers> workspaceMembers = workspaceMemberRepo.findByWorkspaceId(workspaceId);
-        List<Long> userIds = workspaceMembers.stream().map(WorkspaceMembers::getUserId).toList();
+        List<Long> userIds = workspaceMembers.stream().map(WorkspaceMembers::getUserId).filter(id -> !id.equals(userId)).toList();
         if (userIds.isEmpty()) {
             return List.of();
         }

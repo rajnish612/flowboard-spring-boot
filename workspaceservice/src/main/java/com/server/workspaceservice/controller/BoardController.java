@@ -27,6 +27,15 @@ public class BoardController {
         return ResponseEntity.ok(boards);
     }
 
+    //Endpoint to fetch board using boardId
+    @GetMapping("/detail/{boardId}")
+    public ResponseEntity<BoardDTO> getBoardById(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long boardId) {
+        Long userId = jwt.getClaim("userId");
+        return ResponseEntity.ok(boardService.getBoardById(boardId, userId));
+    }
+
 
     //Endpoint to check if the user has access to board or not using board and user Id
     @GetMapping("/{boardId}/access")

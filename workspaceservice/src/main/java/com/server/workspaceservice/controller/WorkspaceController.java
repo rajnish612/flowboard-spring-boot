@@ -44,8 +44,9 @@ public class WorkspaceController {
 
     //End point to fetch members using workspace id
     @GetMapping("/member/{workspaceId}")
-    public ResponseEntity<List<UserDTO>> getMembersByWorkspaceId(@PathVariable Long workspaceId) {
-        return ResponseEntity.ok(workspaceService.getWorkspaceMembersByWorkspaceId(workspaceId));
+    public ResponseEntity<List<UserDTO>> getMembersByWorkspaceId(@AuthenticationPrincipal Jwt jwt, @PathVariable Long workspaceId) {
+        Long userId = jwt.getClaim("userId");
+        return ResponseEntity.ok(workspaceService.getWorkspaceMembersByWorkspaceId(workspaceId, userId));
     }
 
     //Endpoint to fetch all shared workspaces

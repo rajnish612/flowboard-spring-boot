@@ -10,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import org.springframework.security.access.AccessDeniedException;
+import jakarta.persistence.EntityNotFoundException;
 
 import java.util.List;
 
@@ -32,6 +33,26 @@ public class BoardService {
                         .workspaceId(b.getWorkspaceId())
                         .name(b.getName())
                         .build()).toList();
+    }
+
+    //Method to fetch board using board id
+    public BoardDTO getBoardById(Long boardId, Long userId) {
+        Board board = boardRepo.findById(boardId)
+                .orElseThrow(() -> new EntityNotFoundException("Board not found: " + boardId));
+
+        if (!hasUserAccessToBoard(boardId, userId)) {
+            throw new AccessDeniedException("You are not authorized to access this board");
+        }
+
+        return BoardDTO.builder()
+                .id(board.getId())
+                .workspaceId(board.getWorkspaceId())
+                .name(board.getName())
+                .description(board.getDescription())
+                .createdBy(board.getCreatedBy())
+                .createdAt(board.getCreatedAt())
+                .updatedAt(board.getUpdatedAt())
+                .build();
     }
 
     //Method to create new board

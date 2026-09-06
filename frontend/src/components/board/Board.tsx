@@ -8,6 +8,7 @@ import { axiosIns } from "../../utils/axiosInstance";
 const BASE = "/api/task";
 type CardModalProps = {
   card: Card;
+  members: Member[];
   onClose: () => void;
   onSave: (updated: Card) => void;
   onDelete: (cardId: number) => void;
@@ -15,6 +16,7 @@ type CardModalProps = {
 
 const CardModal: React.FC<CardModalProps> = ({
   card,
+  members,
   onClose,
   onSave,
   onDelete,
@@ -23,6 +25,9 @@ const CardModal: React.FC<CardModalProps> = ({
   const [description, setDescription] = useState(card.description ?? "");
   const [dueDate, setDueDate] = useState(
     card.dueDate ? card.dueDate.slice(0, 10) : "",
+  );
+  const [assignedTo, setAssignedTo] = useState(
+    card.assignedTo ? String(card.assignedTo) : "",
   );
   const [saving, setSaving] = useState(false);
 
@@ -34,6 +39,7 @@ const CardModal: React.FC<CardModalProps> = ({
         title: title,
         description,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        assignedTo: assignedTo ? Number(assignedTo) : undefined,
       });
       onSave(res.data);
     } catch (err) {
@@ -108,6 +114,23 @@ const CardModal: React.FC<CardModalProps> = ({
               className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Assign to
+            </label>
+            <select
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            >
+              <option value="">Unassigned</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name} ({member.email})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Footer */}
@@ -146,6 +169,12 @@ type CardProps = {
   onClick: () => void;
   onDragStart: (e: React.DragEvent, card: Card) => void;
   onDelete: (cardId: number) => void;
+};
+
+type Member = {
+  id: number;
+  name: string;
+  email: string;
 };
 
 const CardItem: React.FC<CardProps> = ({
@@ -560,6 +589,7 @@ const Board: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [addingList, setAddingList] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
 
   // Drag state stored in a ref to avoid re-renders
   const dragCard = useRef<Card | null>(null);
@@ -570,7 +600,17 @@ const Board: React.FC = () => {
       if (!numericBoardId) return;
       setLoading(true);
       try {
-        const res = await axiosIns.get<BoardList[]>(`${BASE}/list/${boardId}`);
+        const [boardRes, listsRes] = await Promise.all([
+          axiosIns.get<{ workspaceId: number }>(
+            `/api/workspace/board/detail/${boardId}`,
+          ),
+          axiosIns.get<BoardList[]>(`${BASE}/list/${boardId}`),
+        ]);
+        const membersRes = await axiosIns.get<Member[]>(
+          `/api/workspace/member/${boardRes.data.workspaceId}`,
+        );
+        setMembers(membersRes.data);
+        const res = listsRes;
         setLists(res.data);
         //Fetch all lists in parallel
         const entries = await Promise.all(
@@ -582,7 +622,6 @@ const Board: React.FC = () => {
             // api.fetchCards(l.id).then((c) => [l.id, c] as [number, Card[]]),
           ),
         );
-        console.log("entries", entries);
 
         setCards(Object.fromEntries(entries));
         setLoading(true);
@@ -857,6 +896,7 @@ const Board: React.FC = () => {
       {selectedCard && (
         <CardModal
           card={selectedCard}
+          members={members}
           onClose={() => setSelectedCard(null)}
           onSave={handleSaveCard}
           onDelete={(cardId) => handleDeleteCard(cardId, selectedCard.listId)}
