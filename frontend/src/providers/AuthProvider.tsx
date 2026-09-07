@@ -30,7 +30,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Log the user out by calling the backend logout endpoint.
   const logout = async () => {
-    await axiosIns.get("/api/auth/logout");
+    const res = await axiosIns.post("/api/auth/logout");
+    console.log("logout", res.data);
 
     // Clear the user from React state.
     setUser(null);

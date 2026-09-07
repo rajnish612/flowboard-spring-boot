@@ -201,7 +201,7 @@ type Member = {
 const Board: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
   const numericBoardId = Number(boardId);
-
+  const [boardBackground, setBoardBackground] = React.useState<string>("");
   const [lists, setLists] = useState<BoardList[]>([]);
   const [cards, setCards] = useState<Record<number, Card[]>>({});
   const [loading, setLoading] = useState(true);
@@ -220,11 +220,13 @@ const Board: React.FC = () => {
       setLoading(true);
       try {
         const [boardRes, listsRes] = await Promise.all([
-          axiosIns.get<{ workspaceId: number }>(
+          axiosIns.get<{ workspaceId: number; backgroundImage: string }>(
             `/api/workspace/board/detail/${boardId}`,
           ),
           axiosIns.get<BoardList[]>(`${BASE}/list/${boardId}`),
         ]);
+
+        setBoardBackground(boardRes.data.backgroundImage);
         const membersRes = await axiosIns.get<Member[]>(
           `/api/workspace/member/${boardRes.data.workspaceId}`,
         );
@@ -431,10 +433,11 @@ const Board: React.FC = () => {
 
   return (
     <div
-      className="flex flex-col min-h-screen"
+      className="flex flex-col min-h-screen bg-cover bg-center bg-no-repeat"
       style={{
-        background:
-          "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6d28d9 100%)",
+        backgroundImage: boardBackground
+          ? `url(${boardBackground})`
+          : "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6d28d9 100%)",
       }}
     >
       {/* Board Header */}

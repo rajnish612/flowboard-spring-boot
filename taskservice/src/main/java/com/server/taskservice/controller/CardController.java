@@ -44,7 +44,7 @@ public class CardController {
     )
     @PutMapping("/{id}")
     public ResponseEntity<CardDTO> updateCard(@PathVariable Long id, @RequestBody CardDTO dto) {
-   
+
         CardDTO updated = cardService.updateCard(id, dto);
         return ResponseEntity.ok(updated);
     }

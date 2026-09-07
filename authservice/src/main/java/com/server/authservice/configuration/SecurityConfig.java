@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -34,7 +35,8 @@ public class SecurityConfig {
                 .formLogin(formLogin -> formLogin.disable()).authorizeHttpRequests(auth -> auth.requestMatchers("/login/**", "/oauth2/**").permitAll().anyRequest().authenticated()).oauth2Login(oauth -> oauth.failureHandler(((request, response, exception) -> {
                     log.error("Login failed: {}", exception.getMessage());
                     response.sendRedirect("http://localhost:5173/login?error=oauth");
-                })).successHandler(oauth2SuccessHandler)) // CUSTOM HANDLER AFTER SUCCESSFUL OAUTH2 AUTHENTICATION
+                })).successHandler(oauth2SuccessHandler))
+                .logout(AbstractHttpConfigurer::disable)// CUSTOM HANDLER AFTER SUCCESSFUL OAUTH2 AUTHENTICATION
                 .oauth2ResourceServer(oauth -> oauth
                         .jwt(jwt -> {
                         }));  // ENABLES JWT BEARER-TOKEN AUTHENTICATION

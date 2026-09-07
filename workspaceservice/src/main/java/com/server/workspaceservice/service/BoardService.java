@@ -50,6 +50,7 @@ public class BoardService {
                 .workspaceId(board.getWorkspaceId())
                 .name(board.getName())
                 .description(board.getDescription())
+                .backgroundImage(board.getBackgroundImage())
                 .createdAt(board.getCreatedAt())
                 .updatedAt(board.getUpdatedAt())
                 .build();

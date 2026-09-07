@@ -23,7 +23,7 @@ public class RouteConfig {
 
         //Auth service route
         return route("authservice")
-                .GET("/api/auth/**", http())
+                .route(path("/api/auth/**"), http())
 
                 // AUTH_TOKEN cookie → Authorization: Bearer JWT
                 .before(JwtCookieFilter.addJwtToHeader())
@@ -66,6 +66,7 @@ public class RouteConfig {
                 .filter(lb("workspaceservice"))
                 .build();
     }
+
     //Route for task service
     @Bean
     public RouterFunction<ServerResponse> taskServiceRoute() {

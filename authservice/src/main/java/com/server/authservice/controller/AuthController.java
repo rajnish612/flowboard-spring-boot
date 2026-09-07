@@ -4,6 +4,8 @@ import com.server.authservice.model.User;
 import com.server.authservice.dto.ProfileDTO;
 import com.server.authservice.repository.UserRepo;
 import com.server.authservice.service.UserService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -58,5 +60,22 @@ public class AuthController {
     @GetMapping("/user/{email}")
     public ResponseEntity<ProfileDTO> getUserByEmail(@PathVariable("email") String email) {
         return ResponseEntity.ok(userService.getUserByEmail(email));
+    }
+
+
+    //Endpoint to logout user
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(
+            HttpServletResponse response) {
+
+        Cookie cookie = new Cookie("AUTH_TOKEN", null);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true); // false locally if you're using plain HTTP
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+
+        response.addCookie(cookie);
+
+        return ResponseEntity.ok("Logged out successfully");
     }
 }
