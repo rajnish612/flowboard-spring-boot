@@ -20,6 +20,17 @@ public class UserService {
 
     private final UserRepo userRepo;
 
+    //Method to get user by id
+    public ProfileDTO getUserById(Long id) {
+        return userRepo.findById(id)
+                .map(u -> ProfileDTO.builder()
+                        .name(u.getName())
+                        .email(u.getEmail())
+                        .avatar(u.getAvatar())
+                        .build())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
     //Method to get users by user Ids
     public List<ProfileDTO> getUsersByIds(List<Long> userIds) {
         return userRepo.findAllByIdIn(userIds).stream().map(u -> ProfileDTO.builder().name(u.getName()).email(u.getEmail()).id(u.getId()).avatar(u.getAvatar()).build()).toList();

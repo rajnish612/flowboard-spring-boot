@@ -25,7 +25,8 @@ public class CardDTO {
     private Integer position;
 
     private Long assignedTo;
-
+    private String assignedToName;
+    private String assignedToAvatar;
     private LocalDateTime dueDate;
 
     private LocalDateTime createdAt;

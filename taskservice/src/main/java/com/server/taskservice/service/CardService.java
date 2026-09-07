@@ -1,6 +1,8 @@
 package com.server.taskservice.service;
 
+import com.server.taskservice.client.AuthClient;
 import com.server.taskservice.dto.CardDTO;
+import com.server.taskservice.dto.UserDTO;
 import com.server.taskservice.model.Card;
 import com.server.taskservice.repository.CardRepo;
 import jakarta.persistence.EntityNotFoundException;
@@ -10,6 +12,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 // Service for managing Trello-style cards within a list
 @Slf4j
@@ -18,12 +24,40 @@ import java.util.List;
 public class CardService {
 
     private final CardRepo cardRepo;
+    private final AuthClient authClient;
 
     // Fetch all cards for a list, already ordered by position
     public List<CardDTO> getCardsByListId(Long listId) {
-        return cardRepo.findByListIdOrderByPositionAsc(listId)
+        List<Card> cards = cardRepo.findByListIdOrderByPositionAsc(listId);
+//
+        List<Long> userIds = cards.stream()
+                .map(Card::getAssignedTo)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, UserDTO> profiles = authClient.getUsersByIds(userIds)
                 .stream()
-                .map(this::toDTO)
+                .collect(Collectors.toMap(
+                        UserDTO::getId,
+                        Function.identity()
+                ));
+        return cards.stream()
+                .map(card -> {
+
+                    CardDTO dto = toDTO(card);
+
+                    if (card.getAssignedTo() != null) {
+                        UserDTO profile =
+                                profiles.get(card.getAssignedTo());
+
+                        if (profile != null) {
+                            dto.setAssignedToAvatar(profile.getAvatar());
+                            dto.setAssignedToName(profile.getName());
+                        }
+                    }
+
+                    return dto;
+                })
                 .toList();
     }
 
@@ -62,15 +96,17 @@ public class CardService {
         if (dto.getDueDate() != null) {
             card.setDueDate(dto.getDueDate());
         }
-        if (dto.getAssignedTo() != null) {
-            card.setAssignedTo(dto.getAssignedTo());
-        }
+
+        card.setAssignedTo(dto.getAssignedTo());
+
         if (dto.getPosition() != null) {
             card.setPosition(dto.getPosition());
         }
 
         Card updated = cardRepo.save(card);
-        log.info("Updated card id={}", id);
+
+
+        log.info("Updated card id = {}", id);
         return toDTO(updated);
     }
 
@@ -141,7 +177,7 @@ public class CardService {
 
     // Helper: convert entity to DTO
     private CardDTO toDTO(Card card) {
-        return CardDTO.builder()
+        CardDTO.CardDTOBuilder builder = CardDTO.builder()
                 .id(card.getId())
                 .listId(card.getListId())
                 .title(card.getTitle())
@@ -150,7 +186,16 @@ public class CardService {
                 .assignedTo(card.getAssignedTo())
                 .dueDate(card.getDueDate())
                 .createdAt(card.getCreatedAt())
-                .updatedAt(card.getUpdatedAt())
-                .build();
+                .updatedAt(card.getUpdatedAt());
+
+        if (card.getAssignedTo() != null) {
+            UserDTO user = authClient.getProfile(card.getAssignedTo());
+
+            builder
+                    .assignedToName(user.getName())
+                    .assignedToAvatar(user.getAvatar());
+        }
+
+        return builder.build();
     }
 }

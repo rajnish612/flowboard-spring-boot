@@ -39,6 +39,11 @@ public class AuthController {
         return ResponseEntity.ok(profile);
     }
 
+    //Endpoint to get single profile using user Id
+    @GetMapping("/profile/{id}")
+    public ResponseEntity<ProfileDTO> getUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
+    }
 
     //Endpoint to get multiple users through userIds
     @PostMapping("/users")

@@ -1,17 +1,24 @@
 import { useState } from "react";
 import type { Card } from "../../types/task";
 import { axiosIns } from "../../utils/axiosInstance";
-
+const BASE = "/api/task";
 type CardModalProps = {
   card: Card;
+  members: Member[];
   onClose: () => void;
   onSave: (updated: Card) => void;
   onDelete: (cardId: number) => void;
 };
 
+type Member = {
+  id: number;
+  name: string;
+  email: string;
+};
 // Modal for viewing and editing a card's details
-const CardModal: React.FC<CardModalProps> = ({
+export const CardModal: React.FC<CardModalProps> = ({
   card,
+  members,
   onClose,
   onSave,
   onDelete,
@@ -21,20 +28,25 @@ const CardModal: React.FC<CardModalProps> = ({
   const [dueDate, setDueDate] = useState(
     card.dueDate ? card.dueDate.slice(0, 10) : "",
   );
+  const [assignedTo, setAssignedTo] = useState(
+    card.assignedTo ? String(card.assignedTo) : "",
+  );
   const [saving, setSaving] = useState(false);
 
+  //Save card details
   const handleSave = async () => {
     setSaving(true);
     try {
       const res = await axiosIns.put<Card>(`${BASE}/card/${card.id}`, {
-        title,
+        title: title,
         description,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        assignedTo: assignedTo ? Number(assignedTo) : undefined,
       });
-      const updated = res.data;
-      // const updated = await api.updateCard(card.id, {});
-      onSave(updated);
-      onClose();
+
+      onSave(res.data);
+    } catch (err) {
+      console.log("err in updating card: ", err.response.data.message);
     } finally {
       setSaving(false);
     }
@@ -105,6 +117,23 @@ const CardModal: React.FC<CardModalProps> = ({
               className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Assign to
+            </label>
+            <select
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            >
+              <option value="">Unassigned</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name} ({member.email})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Footer */}
@@ -135,5 +164,3 @@ const CardModal: React.FC<CardModalProps> = ({
     </div>
   );
 };
-
-export default CardModal;
