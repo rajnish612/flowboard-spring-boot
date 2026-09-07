@@ -1,11 +1,45 @@
-﻿import { Outlet } from "react-router";
-import { useAuth } from "../../hooks/UseAuth";
+﻿import React, { useState, useEffect } from "react";
+import { Outlet, useParams, useOutletContext } from "react-router";
 
-const ContentPanel = () => {
-  // Placeholder workspace name — replace with real data when logic is added
-  const workspaceName = "My Workspace";
-  const workspaceInitial = workspaceName.charAt(0).toUpperCase();
+import { useAuth } from "../../hooks/UseAuth";
+import { axiosIns } from "../../utils/axiosInstance";
+
+type Workspace = {
+  id?: number;
+  name: string;
+  ownerId: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+const ContentPanel: React.FC = () => {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const { user, logout } = useAuth();
+
+  const workspaceInitial = workspace?.name?.charAt(0).toUpperCase() || "W";
+
+  //Fetch workspace
+  const fetchWorkspace = () => {
+    if (!workspaceId) return;
+
+    axiosIns
+      .get(`/api/workspace/${workspaceId}`)
+      .then((res) => {
+        setWorkspace(res.data);
+      })
+      .catch((err) => {
+        console.error("Error fetching workspace details:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchWorkspace();
+  }, [workspaceId]);
 
   return (
     <div className="flex-1 flex flex-col bg-gray-50 min-h-screen overflow-y-auto relative">
@@ -16,7 +50,9 @@ const ContentPanel = () => {
         </div>
 
         <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-white">{workspaceName}</h1>
+          <h1 className="text-xl font-bold text-white">
+            {workspace?.name || "Workspace"}
+          </h1>
           <span className="text-xs text-violet-200 mt-0.5">Free Plan</span>
         </div>
       </div>
@@ -25,14 +61,12 @@ const ContentPanel = () => {
       {user && (
         <div className="absolute top-5 right-8 z-10">
           <div className="group relative">
-            {/* Profile Button */}
+            {/* Profile Trigger Button */}
             <button className="flex items-center gap-3 px-3 py-2 rounded-2xl bg-white/95 backdrop-blur-md border border-white/40 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5">
               {user.avatar ? (
                 <img
                   alt={user.name}
                   src={user.avatar}
-                  width={48}
-                  height={48}
                   className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
                 />
               ) : (
@@ -63,7 +97,7 @@ const ContentPanel = () => {
               </svg>
             </button>
 
-            {/* Floating Details Card */}
+            {/* Floating Dropdown Card */}
             <div className="absolute right-0 top-14 w-72 opacity-0 invisible translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-300">
               <div className="rounded-2xl bg-white border border-gray-200 shadow-2xl overflow-hidden">
                 {/* Profile Header */}
@@ -73,10 +107,10 @@ const ContentPanel = () => {
                       <img
                         src={user.avatar}
                         alt={user.name}
-                        className="w-16 h-16 rounded-full object-cover border-4 border-white/30 shadow-md"
+                        className="w-14 h-14 rounded-full object-cover border-4 border-white/30 shadow-md"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-white/20 text-white flex items-center justify-center text-2xl font-bold border-4 border-white/30">
+                      <div className="w-14 h-14 rounded-full bg-white/20 text-white flex items-center justify-center text-xl font-bold border-4 border-white/30">
                         {user.name?.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -93,51 +127,65 @@ const ContentPanel = () => {
                 </div>
 
                 {/* Profile Information */}
-                <div className="p-4">
-                  <div className="flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50">
+                <div className="p-4 space-y-2">
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50">
                     <span className="text-sm text-gray-500">Plan</span>
                     <span className="text-sm font-semibold text-violet-600">
                       Free
                     </span>
                   </div>
 
-                  <div className="mt-2 flex items-center justify-between px-3 py-3 rounded-xl bg-gray-50">
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50">
                     <span className="text-sm text-gray-500">Account</span>
                     <span className="text-sm font-medium text-green-600">
                       Active
                     </span>
                   </div>
                 </div>
+
+                {/* Logout Button */}
+                <div className="p-4 pt-0">
+                  <button
+                    onClick={logout}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 text-red-600 font-medium text-sm hover:bg-red-100 hover:text-red-700 transition-all duration-200"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"
+                      />
+                    </svg>
+                    Logout
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="px-4 pb-4">
-            <button
-              onClick={logout}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-50 text-red-600 font-medium text-sm hover:bg-red-100 hover:text-red-700 transition-all duration-200"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"
-                />
-              </svg>
-              Logout
-            </button>
           </div>
         </div>
       )}
 
-      {/* Board Section */}
+      {/* Main Content Area */}
       <div className="px-8 py-6">
-        <Outlet />
+        {loading ? (
+          <div className="flex justify-center items-center min-h-[200px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
+          </div>
+        ) : (
+          <Outlet
+            context={{
+              workspace,
+              setWorkspace,
+              refreshWorkspace: fetchWorkspace,
+            }}
+          />
+        )}
       </div>
     </div>
   );

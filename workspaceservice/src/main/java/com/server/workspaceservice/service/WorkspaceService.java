@@ -8,6 +8,7 @@ import com.server.workspaceservice.model.WorkspaceMembers;
 import com.server.workspaceservice.repository.BoardRepo;
 import com.server.workspaceservice.repository.WorkSpaceRepo;
 import com.server.workspaceservice.repository.WorkspaceMemberRepo;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,18 @@ public class WorkspaceService {
     private final BoardRepo boardRepo;
     private final WorkspaceMemberRepo workspaceMemberRepo;
     private final AuthClient authClient;
+
+
+    //Method to fetch workspace usign workspace id
+    public WorkspaceDTO getWorkspaceByWorkspaceId(Long workspaceId) {
+        return workSpaceRepo.findById(workspaceId).map(w -> WorkspaceDTO.builder().id(w.getId()).name(w.getName()).ownerId(w.getOwnerId()).updatedAt(w.getUpdatedAt()).createdAt(w.getCreatedAt()).build()).orElseThrow(() -> new EntityNotFoundException("Workspace not found with id: " + workspaceId));
+
+    }
+
+    //Method to delete workspace
+    public void deleteWorkspace(Long id) {
+        workSpaceRepo.deleteById(id);
+    }
 
     //Method to create new workspace
     public WorkspaceDTO createWorkspace(WorkspaceDTO workspaceDTO) {

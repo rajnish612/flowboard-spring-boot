@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { axiosIns } from "../../../utils/axiosInstance";
 import { useParams, Link } from "react-router";
 import { isAxiosError } from "axios";
@@ -19,19 +19,27 @@ type Board = {
 const BoardCard: React.FC<Board> = ({ backgroundImage, name }) => {
   return (
     <div
-      style={{ backgroundImage: `url(${backgroundImage})` }}
-      className={`relative w-52 h-32 rounded-xl bg-cover bg-blue-100 cursor-pointer shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-hidden group`}
+      style={
+        backgroundImage
+          ? { backgroundImage: `url(${backgroundImage})` }
+          : undefined
+      }
+      className={`relative w-52 h-32 rounded-xl ${
+        backgroundImage
+          ? "bg-cover bg-center"
+          : "bg-gradient-to-br from-indigo-500 via-purple-500 to-violet-600"
+      } cursor-pointer shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-hidden group`}
     >
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-200" />
+
       {/* Board title */}
-      <span className="absolute top-3 left-3 text-white font-semibold text-sm drop-shadow">
+      <span className="absolute top-3 left-3 z-10 text-white font-semibold text-sm drop-shadow-md">
         {name}
       </span>
 
-      {/* Hover overlay */}
-      <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl" />
-
       {/* Star icon */}
-      <button className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <button className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-4 w-4 text-white/80 hover:text-yellow-300"
@@ -43,14 +51,13 @@ const BoardCard: React.FC<Board> = ({ backgroundImage, name }) => {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888c-.783-.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00.951-.69l1.519-4.674z"
           />
         </svg>
       </button>
     </div>
   );
 };
-
 type CreateBoardCardProps = {
   onClick: () => void;
 };

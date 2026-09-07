@@ -21,6 +21,23 @@ import java.util.List;
 public class WorkspaceController {
     private final WorkspaceService workspaceService;
 
+
+    //Endpoint to fetch workspace using workspaceId
+    @GetMapping("/{workspaceId}")
+    public ResponseEntity<WorkspaceDTO> getWorkspaceByWorkspaceId(@PathVariable Long workspaceId) {
+
+
+        return ResponseEntity.ok(workspaceService.getWorkspaceByWorkspaceId(workspaceId));
+    }
+
+    //Endpoint to delete workspace using workspaceId
+    @DeleteMapping("/{workspaceId}")
+    public ResponseEntity<String> deleteWorkspace(@PathVariable Long workspaceId) {
+
+        workspaceService.deleteWorkspace(workspaceId);
+        return ResponseEntity.ok("deleted");
+    }
+
     //End point to create a workspace
     @PostMapping("create")
     public ResponseEntity<WorkspaceDTO> createWorkspace(@RequestBody WorkspaceDTO workspace) {
