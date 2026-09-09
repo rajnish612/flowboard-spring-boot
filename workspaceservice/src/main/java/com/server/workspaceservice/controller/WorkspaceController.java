@@ -32,10 +32,19 @@ public class WorkspaceController {
 
     //Endpoint to delete workspace using workspaceId
     @DeleteMapping("/{workspaceId}")
-    public ResponseEntity<String> deleteWorkspace(@PathVariable Long workspaceId) {
-
-        workspaceService.deleteWorkspace(workspaceId);
+    public ResponseEntity<String> deleteWorkspace(@PathVariable Long workspaceId, @AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        workspaceService.deleteWorkspace(workspaceId, userId);
         return ResponseEntity.ok("deleted");
+    }
+
+
+    //Endpoint to update workspace using workspace id
+    @PutMapping("/{workspaceId}")
+    public ResponseEntity<String> updateWorkspace(@PathVariable Long workspaceId, @RequestBody WorkspaceDTO workspaceDTO, @AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        workspaceService.updateWorkspace(workspaceId, workspaceDTO, userId);
+        return ResponseEntity.ok("updated");
     }
 
     //End point to create a workspace
@@ -81,8 +90,9 @@ public class WorkspaceController {
 
     //Endpoint to add member to the workspace
     @PostMapping("/member")
-    public ResponseEntity<UserDTO> addMember(@RequestBody AddMemberDTO addMemberDTO) {
-        return ResponseEntity.ok(workspaceService.addMember(addMemberDTO));
+    public ResponseEntity<UserDTO> addMember(@RequestBody AddMemberDTO addMemberDTO, @AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        return ResponseEntity.ok(workspaceService.addMember(addMemberDTO, userId));
     }
 
 }

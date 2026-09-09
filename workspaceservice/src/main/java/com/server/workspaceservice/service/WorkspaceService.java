@@ -32,7 +32,11 @@ public class WorkspaceService {
     }
 
     //Method to delete workspace
-    public void deleteWorkspace(Long id) {
+    public void deleteWorkspace(Long id, Long userId) {
+        boolean hasAccess = workSpaceRepo.checkIsOwner(userId, id);
+        if (!hasAccess) {
+            throw new RuntimeException("You are not the owner of this workspace");
+        }
         workSpaceRepo.deleteById(id);
     }
 
@@ -98,8 +102,14 @@ public class WorkspaceService {
         return authClient.getUsersByIds(userIds);
     }
 
+
     //Method to add member to the workspace
-    public UserDTO addMember(AddMemberDTO addMemberDTO) {
+    public UserDTO addMember(AddMemberDTO addMemberDTO, Long userId) {
+        boolean hasAccess = workSpaceRepo.checkIsOwner(userId, addMemberDTO.getWorkspaceId());
+        if (!hasAccess) {
+            throw new RuntimeException("You are not the owner of this workspace");
+        }
+
         UserDTO user = authClient.getUserByEmail(addMemberDTO.getEmail());
 
         WorkspaceMembers member = WorkspaceMembers.builder()
@@ -113,4 +123,16 @@ public class WorkspaceService {
     }
 
 
+    //Method to update workspace
+    public void updateWorkspace(Long workspaceId, WorkspaceDTO workspaceDTO, Long userId) {
+        Workspace workspace = workSpaceRepo.findById(workspaceId)
+                .orElseThrow(() -> new RuntimeException("Workspace not found"));
+        if (!workspace.getOwnerId().equals(userId)) {
+            throw new RuntimeException("You are not the owner of this workspace");
+        }
+
+        workspace.setName(workspaceDTO.getName());
+
+        workSpaceRepo.save(workspace);
+    }
 }

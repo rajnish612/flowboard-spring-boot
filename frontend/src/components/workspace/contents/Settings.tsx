@@ -12,8 +12,8 @@ type Workspace = {
 const Settings: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
-  const { workspace } = useWorkspaceContext();
-  //   const [workspaceName, setWorkspaceName] = useState("");
+  const { workspace, setWorkspace } = useWorkspaceContext();
+
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState("");
@@ -127,7 +127,12 @@ const Settings: React.FC = () => {
             type="text"
             value={workspace?.name}
             onChange={(e) => {
-              //   setWorkspaceName(e.target.value);
+              if (workspace) {
+                setWorkspace({
+                  ...workspace,
+                  name: e.target.value,
+                });
+              }
               setError("");
               setMessage("");
             }}
