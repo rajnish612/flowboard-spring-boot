@@ -9,9 +9,16 @@ type Member = {
   email: string;
   avatar?: string | null;
 };
+type User = {
+  id: number;
+  name: string;
+  email: string;
+  avatar: string | null;
+};
 const Members: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const [members, setMembers] = useState<Member[]>([]);
+  const [searchResults, setSearchResults] = useState<User[]>([]);
   const [email, setEmail] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -61,6 +68,16 @@ const Members: React.FC = () => {
     } finally {
       setAdding(false);
     }
+  };
+
+  //Search users using email
+  const handleSearch = async (e) => {
+    setEmail(e.target.value);
+    if (!e.target.value) return;
+    try {
+      const res = await axiosIns.get(`/api/auth/user/search/${e.target.value}`);
+      setSearchResults(res.data);
+    } catch (err) {}
   };
   return (
     <div className="max-w-4xl">
@@ -230,7 +247,7 @@ const Members: React.FC = () => {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleSearch}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     addMember();
@@ -244,6 +261,35 @@ const Members: React.FC = () => {
                 autoFocus
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
               />{" "}
+              {/* Search results */}
+              {searchResults.length > 0 && (
+                <div className="mt-2 rounded-xl border border-gray-200 bg-white shadow-md overflow-hidden">
+                  {searchResults.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => {
+                        setEmail(user.email);
+                        setSearchResults([]);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition"
+                    >
+                      <img
+                        src={user?.avatar}
+                        alt={user.name}
+                        className="h-9 w-9 rounded-full object-cover"
+                      />
+
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">
+                          {user.name}
+                        </p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>{" "}
             {/* Footer */}{" "}
             <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">

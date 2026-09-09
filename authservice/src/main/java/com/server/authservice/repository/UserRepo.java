@@ -13,4 +13,13 @@ public interface UserRepo extends JpaRepository<User, Long> {
 
     //Get users my multiple user Ids together
     List<User> findAllByIdIn(List<Long> userIds);
+
+
+    //Get users using the matching email
+    List<User> findByEmailStartingWithIgnoreCaseAndEmailNot(
+            String email,
+            String excludeEmail
+    );
+
+    ;
 }

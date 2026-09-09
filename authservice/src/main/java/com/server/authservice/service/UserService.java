@@ -36,6 +36,17 @@ public class UserService {
         return userRepo.findAllByIdIn(userIds).stream().map(u -> ProfileDTO.builder().name(u.getName()).email(u.getEmail()).id(u.getId()).avatar(u.getAvatar()).build()).toList();
     }
 
+    //Find users by email
+    public List<ProfileDTO> searchUsersByEmail(String email, String excludedEmail) {
+        return userRepo.findByEmailStartingWithIgnoreCaseAndEmailNot(email, excludedEmail).stream().map(user -> ProfileDTO.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .avatar(user.getAvatar())
+                .build()).toList();
+
+    }
+
     //Method to get user by email
     public ProfileDTO getUserByEmail(String email) {
         User user = userRepo.findByEmail(email).orElseThrow(() ->

@@ -62,6 +62,13 @@ public class AuthController {
         return ResponseEntity.ok(userService.getUserByEmail(email));
     }
 
+    //Endpoint to search  users by email
+    @GetMapping("/user/search/{email}")
+    public ResponseEntity<List<ProfileDTO>> searchUsersByEmail(@PathVariable("email") String email, @AuthenticationPrincipal Jwt jwt) {
+        String userEmail = jwt.getSubject();
+        return ResponseEntity.ok(userService.searchUsersByEmail(email, userEmail));
+    }
+
 
     //Endpoint to logout user
     @PostMapping("/logout")
