@@ -149,12 +149,14 @@ const Column: React.FC<ColumnProps> = ({
 
       {/* Cards */}
       <div className="flex flex-col gap-2 px-2 pb-2 overflow-y-auto max-h-[calc(100vh-220px)]">
-        {cards.map((card) => (
+        {cards.map((card, index) => (
           <CardItem
             key={card.id}
             card={card}
+            index={index}
             onClick={() => onClickCard(card)}
             onDragStart={onDragStartCard}
+            onDrop={(e, position) => onDropCard(e, list.id, position)}
             onDelete={(cardId) => onDeleteCard(cardId, list.id)}
           />
         ))}

@@ -3,15 +3,19 @@ import type { Card } from "../../types/task";
 
 type CardItemProps = {
   card: Card;
+  index: number;
   onClick: () => void;
   onDragStart: (e: React.DragEvent, card: Card) => void;
+  onDrop: (e: React.DragEvent, position: number) => void;
   onDelete: (cardId: number) => void;
 };
 // A single Trello-style card displayed inside a column
 export const CardItem: React.FC<CardItemProps> = ({
   card,
+  index,
   onClick,
   onDragStart,
+  onDrop,
   onDelete,
 }) => {
   const formattedDate = card.dueDate
@@ -25,6 +29,11 @@ export const CardItem: React.FC<CardItemProps> = ({
     <div
       draggable
       onDragStart={(e) => onDragStart(e, card)}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.stopPropagation();
+        onDrop(e, index);
+      }}
       onClick={onClick}
       className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all duration-150 group relative"
     >
