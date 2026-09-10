@@ -6,6 +6,11 @@ import { CardItem } from "./CardItem";
 import { CardModal } from "./CardModal";
 import { AddListForm } from "./AddListForm";
 import { AddCardForm } from "./AddCardForm";
+import {
+  useBoardSocket,
+  type BoardSocketEvent,
+} from "../../websocket/boardSocket";
+import { useAuth } from "../../hooks/UseAuth";
 // ─── Card Detail Modal ────────────────────────────────────────────────────────
 
 const BASE = "/api/task";
@@ -202,6 +207,7 @@ type Member = {
 };
 const Board: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
+  const { user } = useAuth();
   const numericBoardId = Number(boardId);
   const [boardBackground, setBoardBackground] = React.useState<string>("");
   const [lists, setLists] = useState<BoardList[]>([]);
@@ -293,7 +299,7 @@ const Board: React.FC = () => {
 
   // ── Card actions ────────────────────────────────────────────────────────────
   const handleAddCard = useCallback(async (listId: number, title: string) => {
-    const res = await axiosIns.post<Card>(`${BASE}/card/create`, {
+    const res = await axiosIns.post<Card>(`${BASE}/card/create/${boardId}`, {
       listId,
       title,
     });
@@ -307,7 +313,7 @@ const Board: React.FC = () => {
 
   const handleDeleteCard = useCallback(
     async (cardId: number, listId: number) => {
-      await axiosIns.delete(`${BASE}/card/${cardId}`);
+      await axiosIns.delete(`${BASE}/card/${cardId}/${boardId}`);
       setCards((prev) => ({
         ...prev,
         [listId]: (prev[listId] ?? []).filter((c) => c.id !== cardId),
@@ -380,17 +386,83 @@ const Board: React.FC = () => {
 
       // Sync to backend
       axiosIns
-        .post<Card>(`${BASE}/card/${card.id}/move`, {
+        .post<Card>(`${BASE}/card/${card.id}/move/${boardId}`, {
           targetListId,
           position: targetPosition,
         })
         .then((r) => r.data);
-
-      // await api.moveCard(card.id, targetListId, targetPosition);
     },
     [],
   );
 
+  //Board socket events management
+  const handleBoardEvent = useCallback(
+    (event: BoardSocketEvent) => {
+      if (event.userId == user?.id) {
+        return;
+      }
+      switch (event.type) {
+        case "CARD_MOVED": //move card
+          setCards((prev) => {
+            const updated = { ...prev };
+
+            // Remove card from whatever list it currently exists in
+            for (const listId of Object.keys(updated)) {
+              updated[Number(listId)] = updated[Number(listId)].filter(
+                (card) => card.id !== event.data.id,
+              );
+            }
+
+            // Add it to the target list at the correct position
+            const targetListCards = [...(updated[event.data.listId] ?? [])];
+
+            targetListCards.splice(event.data.position, 0, event.data);
+
+            updated[event.data.listId] = targetListCards;
+
+            return updated;
+          });
+          break;
+
+        case "CARD_CREATED":
+          // add card
+          setCards((prev) => ({
+            ...prev,
+            [event.data.listId]: [
+              ...(prev[event.data.listId] ?? []),
+              event.data,
+            ],
+          }));
+          break;
+
+        case "CARD_UPDATED": // update card
+          break;
+
+        case "CARD_DELETED": // remove card
+          break;
+
+        case "LIST_CREATED": // add list
+          setLists((prev) => [...prev, event.data]);
+
+          break;
+
+        case "LIST_UPDATED": // update list
+          setLists((prev) =>
+            prev.map((d) => (d.id == event.data.id ? event.data : d)),
+          );
+          break;
+
+        case "LIST_DELETED": // remove list
+          setLists((prev) => prev.filter((d) => d.id !== event.data));
+          break;
+
+        default:
+          break;
+      }
+    },
+    [user?.id],
+  );
+  useBoardSocket(boardId ? Number(boardId) : undefined, handleBoardEvent);
   // ── Render ──────────────────────────────────────────────────────────────────
   if (loading) {
     return (

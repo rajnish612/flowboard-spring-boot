@@ -2,11 +2,14 @@ package com.server.taskservice.controller;
 
 import com.server.taskservice.dto.BoardListDTO;
 import com.server.taskservice.service.BoardListService;
+import com.server.taskservice.websocket.BoardEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +22,7 @@ import java.util.Map;
 @RequestMapping("/list")
 public class BoardListController {
 
+    private final BoardEventPublisher boardEventPublisher;
     private final BoardListService boardListService;
 
     // GET /list/{boardId} — fetch all lists for a board
@@ -36,8 +40,10 @@ public class BoardListController {
             "@taskAuthorization.hasBoardAccess(#dto.boardId, authentication)"
     )
     @PostMapping("/create")
-    public ResponseEntity<BoardListDTO> createList(@RequestBody BoardListDTO dto) {
+    public ResponseEntity<BoardListDTO> createList(@RequestBody BoardListDTO dto, @AuthenticationPrincipal Jwt jwt) {
         BoardListDTO created = boardListService.createList(dto);
+        Long userId = jwt.getClaim("userId");
+        boardEventPublisher.publish(userId, "LIST_CREATED", dto.getBoardId(), created);
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
@@ -46,8 +52,11 @@ public class BoardListController {
             "@taskAuthorization.hasListAccess(#id, authentication)"
     )
     @PutMapping("/{id}")
-    public ResponseEntity<BoardListDTO> updateList(@PathVariable Long id, @RequestBody BoardListDTO dto) {
+    public ResponseEntity<BoardListDTO> updateList(@PathVariable Long id, @RequestBody BoardListDTO dto, @AuthenticationPrincipal Jwt jwt) {
         BoardListDTO updated = boardListService.updateList(id, dto);
+        Long userId = jwt.getClaim("userId");
+
+        boardEventPublisher.publish(userId, "LIST_UPDATED", dto.getBoardId(), updated);
         return ResponseEntity.ok(updated);
     }
 
@@ -55,9 +64,12 @@ public class BoardListController {
     @PreAuthorize(
             "@taskAuthorization.hasListAccess(#id, authentication)"
     )
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteList(@PathVariable Long id) {
+    @DeleteMapping("/{id}/{boardId}")
+    public ResponseEntity<Void> deleteList(@PathVariable Long id, @PathVariable Long boardId, @AuthenticationPrincipal Jwt jwt) {
         boardListService.deleteList(id);
+        Long userId = jwt.getClaim("userId");
+
+        boardEventPublisher.publish(userId, "LIST_DELETED", boardId, id);
         return ResponseEntity.noContent().build();
     }
 
@@ -68,12 +80,14 @@ public class BoardListController {
     )
     public ResponseEntity<BoardListDTO> reorderList(
             @PathVariable Long id,
-            @RequestBody Map<String, Integer> body) {
+            @RequestBody Map<String, Integer> body, @AuthenticationPrincipal Jwt jwt) {
         Integer newPosition = body.get("position");
         if (newPosition == null) {
             return ResponseEntity.badRequest().build();
         }
         BoardListDTO reordered = boardListService.reorderList(id, newPosition);
+        Long userId = jwt.getClaim("userId");
+        boardEventPublisher.publish(userId, "LIST_UPDATED", reordered.getBoardId(), reordered);
         return ResponseEntity.ok(reordered);
     }
 }
