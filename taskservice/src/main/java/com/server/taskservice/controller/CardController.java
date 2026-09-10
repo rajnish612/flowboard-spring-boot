@@ -61,9 +61,11 @@ public class CardController {
     @PreAuthorize(
             "@taskAuthorization.hasCardAccess(#id, authentication)"
     )
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCard(@PathVariable Long id) {
+    @DeleteMapping("/{id}/{boardId}")
+    public ResponseEntity<Void> deleteCard(@PathVariable Long id, @PathVariable Long boardId, @AuthenticationPrincipal Jwt jwt) {
         cardService.deleteCard(id);
+        Long userId = jwt.getClaim("userId");
+        boardEventPublisher.publish(userId, "CARD_DELETED", boardId, id);
         return ResponseEntity.noContent().build();
     }
 

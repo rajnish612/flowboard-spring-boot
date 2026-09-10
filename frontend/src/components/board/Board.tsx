@@ -439,6 +439,18 @@ const Board: React.FC = () => {
           break;
 
         case "CARD_DELETED": // remove card
+          setCards((prev) => {
+            const updated = { ...prev };
+
+            for (const listId of Object.keys(updated)) {
+              updated[Number(listId)] = updated[Number(listId)].filter(
+                (card) => card.id !== event.data,
+              );
+            }
+
+            return updated;
+          });
+
           break;
 
         case "LIST_CREATED": // add list
