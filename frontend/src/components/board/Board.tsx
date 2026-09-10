@@ -435,8 +435,18 @@ const Board: React.FC = () => {
           }));
           break;
 
-        case "CARD_UPDATED": // update card
-          break;
+        case "CARD_UPDATED":
+          setCards((prev) => {
+            const updated = { ...prev };
+
+            updated[Number(event.data.listId)] = updated[
+              Number(event.data.listId)
+            ].map((card) => (card.id == event.data.id ? event.data : card));
+
+            return updated;
+          });
+
+          break; // update card
 
         case "CARD_DELETED": // remove card
           setCards((prev) => {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Card } from "../../types/task";
 import { axiosIns } from "../../utils/axiosInstance";
+import { useParams } from "react-router";
 const BASE = "/api/task";
 type CardModalProps = {
   card: Card;
@@ -23,6 +24,7 @@ export const CardModal: React.FC<CardModalProps> = ({
   onSave,
   onDelete,
 }) => {
+  const { boardId } = useParams<{ boardId: string }>();
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description ?? "");
   const [dueDate, setDueDate] = useState(
@@ -37,12 +39,15 @@ export const CardModal: React.FC<CardModalProps> = ({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await axiosIns.put<Card>(`${BASE}/card/${card.id}`, {
-        title: title,
-        description,
-        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-        assignedTo: assignedTo ? Number(assignedTo) : undefined,
-      });
+      const res = await axiosIns.put<Card>(
+        `${BASE}/card/${card.id}/${boardId}`,
+        {
+          title: title,
+          description,
+          dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+          assignedTo: assignedTo ? Number(assignedTo) : undefined,
+        },
+      );
 
       onSave(res.data);
     } catch (err) {
