@@ -1,5 +1,6 @@
 import React from "react";
 import type { Card } from "../../types/task";
+import { useAuth } from "../../hooks/UseAuth";
 
 type CardItemProps = {
   card: Card;
@@ -24,7 +25,7 @@ export const CardItem: React.FC<CardItemProps> = ({
         day: "numeric",
       })
     : null;
-
+  const { user } = useAuth();
   return (
     <div
       draggable
@@ -88,6 +89,10 @@ export const CardItem: React.FC<CardItemProps> = ({
             <span className="text-xs font-medium text-gray-700 truncate max-w-[120px]">
               {card.assignedToName || "Member"}
             </span>
+            <span className="text-xs font-light text-blue-700 truncate max-w-[120px]">
+              {card.assignedToEmail || "Member"}
+            </span>
+            {user?.id == card.assignedTo && <span className="text-red-400 font-semibold text-xs">You</span>}
           </div>
         </div>
       )}
