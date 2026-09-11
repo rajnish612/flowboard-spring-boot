@@ -27,14 +27,17 @@ import javax.crypto.SecretKey;
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
+    @Value("${client.uri}")
+    private String clientUri;
     private final Oauth2SuccessHandler oauth2SuccessHandler;
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http.csrf(csrf -> csrf.disable())
                 .formLogin(formLogin -> formLogin.disable()).authorizeHttpRequests(auth -> auth.requestMatchers("/login/**", "/oauth2/**").permitAll().anyRequest().authenticated()).oauth2Login(oauth -> oauth.failureHandler(((request, response, exception) -> {
                     log.error("Login failed: {}", exception.getMessage());
-                    response.sendRedirect("http://localhost:5173/login?error=oauth");
+                    response.sendRedirect(clientUri + "/login?error=oauth");
                 })).successHandler(oauth2SuccessHandler))
                 .logout(AbstractHttpConfigurer::disable)// CUSTOM HANDLER AFTER SUCCESSFUL OAUTH2 AUTHENTICATION
                 .oauth2ResourceServer(oauth -> oauth

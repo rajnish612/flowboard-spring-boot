@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,11 @@ import java.time.Duration;
 public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
     private final AuthService authService;
     private final JwtService jwtService;
+    @Value("${client.uri}")
+    private String clientUri;
+
+    @Value("${app.cookie.secure}")
+    private boolean cookieSecure;
 
     //   METHOD TO GENERATE JWT AND REDIRECT AFTER SUCCESSFULL OAUTH AUTHENTICATION
     @Override
@@ -44,7 +50,7 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
         String token = jwtService.generateToken(oauthUser.getId(), oauthUser.getEmail());
         ResponseCookie cookie = ResponseCookie.from("AUTH_TOKEN", token)
                 .httpOnly(true)
-                .secure(false) // true in HTTPS production
+                .secure(cookieSecure) // true in HTTPS production
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(Duration.ofHours(1))
@@ -52,7 +58,7 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString()); //Saving the token inside cookie
         log.info("OAuth login successful for {}, redirecting to React", email);
-        response.sendRedirect("http://localhost:5173/oauth-success");
+        response.sendRedirect(clientUri + "/oauth-success");
 
     }
 }

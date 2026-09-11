@@ -19,7 +19,7 @@ type CardEvent =
 type ListEvent =
   | {
       userId: number;
-      type: "LIST_CREATED" | "LIST_UPDATED"|"LIST_REORDERED";
+      type: "LIST_CREATED" | "LIST_UPDATED" | "LIST_REORDERED";
       boardId: number;
       data: BoardList;
     }
@@ -28,8 +28,7 @@ type ListEvent =
       type: "LIST_DELETED";
       boardId: number;
       data: number;
-    }
-  
+    };
 
 export type BoardSocketEvent = CardEvent | ListEvent;
 //Type declaration for the board socket event
@@ -44,7 +43,7 @@ export const useBoardSocket = (
     }
 
     const client = new Client({
-      brokerURL: "ws://localhost:8083/ws",
+      brokerURL: import.meta.env.VITE_TASK_WS_URL,
       reconnectDelay: 5000,
 
       onConnect: () => {

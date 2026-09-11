@@ -1,8 +1,7 @@
 import React from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router";
 import { axiosIns } from "../utils/axiosInstance";
-
-const AUTH_BASE_URL = "http://localhost:8081";
+const AUTH_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const Login: React.FC = () => {
   const location = useLocation();
