@@ -19,7 +19,7 @@ type CardEvent =
 type ListEvent =
   | {
       userId: number;
-      type: "LIST_CREATED" | "LIST_UPDATED";
+      type: "LIST_CREATED" | "LIST_UPDATED"|"LIST_REORDERED";
       boardId: number;
       data: BoardList;
     }
@@ -28,7 +28,8 @@ type ListEvent =
       type: "LIST_DELETED";
       boardId: number;
       data: number;
-    };
+    }
+  
 
 export type BoardSocketEvent = CardEvent | ListEvent;
 //Type declaration for the board socket event

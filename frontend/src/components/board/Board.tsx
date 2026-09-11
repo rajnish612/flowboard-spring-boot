@@ -308,15 +308,18 @@ const Board: React.FC = () => {
     setLists((prev) => prev.map((l) => (l.id === listId ? updated : l)));
   }, []);
 
-  const handleDeleteList = useCallback(async (listId: number) => {
-    await axiosIns.delete(`${BASE}/list/${listId}/${numericBoardId}`);
-    setLists((prev) => prev.filter((l) => l.id !== listId));
-    setCards((prev) => {
-      const next = { ...prev };
-      delete next[listId];
-      return next;
-    });
-  }, [numericBoardId]);
+  const handleDeleteList = useCallback(
+    async (listId: number) => {
+      await axiosIns.delete(`${BASE}/list/${listId}/${numericBoardId}`);
+      setLists((prev) => prev.filter((l) => l.id !== listId));
+      setCards((prev) => {
+        const next = { ...prev };
+        delete next[listId];
+        return next;
+      });
+    },
+    [numericBoardId],
+  );
 
   const handleDragStartList = useCallback(
     (e: React.DragEvent, listId: number) => {
@@ -346,9 +349,8 @@ const Board: React.FC = () => {
 
       const nextLists = [...previousLists];
       const [movedList] = nextLists.splice(sourceIndex, 1);
-      const calculatedPosition = sourceIndex < targetIndex
-        ? targetIndex - 1
-        : targetIndex;
+      const calculatedPosition =
+        sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
       const newPosition = Math.max(
         0,
         Math.min(
@@ -381,18 +383,21 @@ const Board: React.FC = () => {
   );
 
   // ── Card actions ────────────────────────────────────────────────────────────
-  const handleAddCard = useCallback(async (listId: number, title: string) => {
-    const res = await axiosIns.post<Card>(`${BASE}/card/create/${boardId}`, {
-      listId,
-      title,
-    });
-    const newCard = res.data;
-    // const newCard = await api.createCard(listId, title);
-    setCards((prev) => ({
-      ...prev,
-      [listId]: [...(prev[listId] ?? []), newCard],
-    }));
-  }, [boardId]);
+  const handleAddCard = useCallback(
+    async (listId: number, title: string) => {
+      const res = await axiosIns.post<Card>(`${BASE}/card/create/${boardId}`, {
+        listId,
+        title,
+      });
+      const newCard = res.data;
+      // const newCard = await api.createCard(listId, title);
+      setCards((prev) => ({
+        ...prev,
+        [listId]: [...(prev[listId] ?? []), newCard],
+      }));
+    },
+    [boardId],
+  );
 
   const handleDeleteCard = useCallback(
     async (cardId: number, listId: number) => {
@@ -484,6 +489,7 @@ const Board: React.FC = () => {
       if (event.userId == user?.id) {
         return;
       }
+
       switch (event.type) {
         case "CARD_MOVED": //move card
           setCards((prev) => {
@@ -552,11 +558,27 @@ const Board: React.FC = () => {
           break;
 
         case "LIST_UPDATED": // update list
-          setLists((prev) =>
-            prev.map((d) => (d.id == event.data.id ? event.data : d)),
+          setLists((previousLists) =>
+            previousLists.map((list) =>
+              list.id === event.data.id ? event.data : list,
+            ),
           );
           break;
 
+        case "LIST_REORDERED":
+          setLists((previousLists) => {
+            const remaining = previousLists.filter(
+              (list) => list.id !== event.data.id,
+            );
+
+            remaining.splice(event.data.position, 0, event.data);
+
+            return remaining.map((list, index) => ({
+              ...list,
+              position: index,
+            }));
+          });
+          break;
         case "LIST_DELETED": // remove list
           setLists((prev) => prev.filter((d) => d.id !== event.data));
           break;

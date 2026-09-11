@@ -56,7 +56,7 @@ public class BoardListController {
         BoardListDTO updated = boardListService.updateList(id, dto);
         Long userId = jwt.getClaim("userId");
 
-        boardEventPublisher.publish(userId, "LIST_UPDATED", dto.getBoardId(), updated);
+        boardEventPublisher.publish(userId, "LIST_UPDATED", updated.getBoardId(), updated);
         return ResponseEntity.ok(updated);
     }
 
@@ -87,7 +87,7 @@ public class BoardListController {
         }
         BoardListDTO reordered = boardListService.reorderList(id, newPosition);
         Long userId = jwt.getClaim("userId");
-        boardEventPublisher.publish(userId, "LIST_UPDATED", reordered.getBoardId(), reordered);
+        boardEventPublisher.publish(userId, "LIST_REORDERED", reordered.getBoardId(), reordered);
         return ResponseEntity.ok(reordered);
     }
 }
