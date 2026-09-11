@@ -1,6 +1,7 @@
 package com.server.workspaceservice.dto;
 
 
+import com.server.workspaceservice.model.WorkspaceRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,7 +27,7 @@ public class WorkspaceMembersDTO {
     private Long userId;
 
 
-
+    private WorkspaceRole role;
 
     private LocalDateTime joinedAt;
 }

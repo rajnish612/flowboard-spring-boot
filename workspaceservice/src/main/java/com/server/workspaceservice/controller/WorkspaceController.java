@@ -1,9 +1,6 @@
 package com.server.workspaceservice.controller;
 
-import com.server.workspaceservice.dto.AddMemberDTO;
-import com.server.workspaceservice.dto.BoardDTO;
-import com.server.workspaceservice.dto.UserDTO;
-import com.server.workspaceservice.dto.WorkspaceDTO;
+import com.server.workspaceservice.dto.*;
 import com.server.workspaceservice.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -71,7 +68,7 @@ public class WorkspaceController {
 
     //End point to fetch members using workspace id
     @GetMapping("/member/{workspaceId}")
-    public ResponseEntity<List<UserDTO>> getMembersByWorkspaceId(@AuthenticationPrincipal Jwt jwt, @PathVariable Long workspaceId) {
+    public ResponseEntity<List<WorkspaceMembersDTO>> getMembersByWorkspaceId(@AuthenticationPrincipal Jwt jwt, @PathVariable Long workspaceId) {
         Long userId = jwt.getClaim("userId");
         return ResponseEntity.ok(workspaceService.getWorkspaceMembersByWorkspaceId(workspaceId, userId));
     }

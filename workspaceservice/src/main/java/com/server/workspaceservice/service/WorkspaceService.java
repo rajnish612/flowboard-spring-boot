@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 //Service for the management of workspaces
 @Service
@@ -103,13 +105,47 @@ public class WorkspaceService {
     }
 
     //Method to fetch members using workspaceId
-    public List<UserDTO> getWorkspaceMembersByWorkspaceId(Long workspaceId, Long userId) {
-        List<WorkspaceMembers> workspaceMembers = workspaceMemberRepo.findByWorkspaceId(workspaceId);
-        List<Long> userIds = workspaceMembers.stream().map(WorkspaceMembers::getUserId).filter(id -> !id.equals(userId)).toList();
-        if (userIds.isEmpty()) {
+    public List<WorkspaceMembersDTO> getWorkspaceMembersByWorkspaceId(
+            Long workspaceId,
+            Long userId
+    ) {
+        List<WorkspaceMembers> members = workspaceMemberRepo
+                .findByWorkspaceId(workspaceId)
+                .stream()
+                .filter(member -> !member.getUserId().equals(userId))
+                .toList();
+
+        if (members.isEmpty()) {
             return List.of();
         }
-        return authClient.getUsersByIds(userIds);
+
+        List<Long> userIds = members.stream()
+                .map(WorkspaceMembers::getUserId)
+                .toList();
+
+        List<UserDTO> users = authClient.getUsersByIds(userIds);
+
+        Map<Long, UserDTO> userMap = users.stream()
+                .collect(Collectors.toMap(
+                        UserDTO::getId,
+                        user -> user
+                ));
+
+        return members.stream()
+                .map(member -> {
+                    UserDTO user = userMap.get(member.getUserId());
+
+                    return WorkspaceMembersDTO.builder()
+                            .joinedAt(member.getJoinedAt())
+
+                            .userId(member.getUserId())
+                            .name(user.getName())
+                            .email(user.getEmail())
+                            .avatar(user.getAvatar())
+                            .role(member.getRole())
+                            .build();
+                })
+                .toList();
     }
 
 

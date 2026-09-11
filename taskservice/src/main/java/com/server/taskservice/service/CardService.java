@@ -98,7 +98,7 @@ public class CardService {
         }
 
         card.setAssignedTo(dto.getAssignedTo());
-
+        log.info("assigned to = {}", dto.getAssignedTo());
         if (dto.getPosition() != null) {
             card.setPosition(dto.getPosition());
         }

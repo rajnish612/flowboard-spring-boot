@@ -12,9 +12,9 @@ type CardModalProps = {
 };
 
 type Member = {
-  id: number;
   name: string;
   email: string;
+  userId: number;
 };
 // Modal for viewing and editing a card's details
 export const CardModal: React.FC<CardModalProps> = ({
@@ -133,7 +133,7 @@ export const CardModal: React.FC<CardModalProps> = ({
             >
               <option value="">Unassigned</option>
               {members.map((member) => (
-                <option key={member.id} value={member.id}>
+                <option key={member.userId} value={member.userId}>
                   {member.name} ({member.email})
                 </option>
               ))}

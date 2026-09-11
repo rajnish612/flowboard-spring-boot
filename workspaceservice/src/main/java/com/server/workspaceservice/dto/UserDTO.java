@@ -1,5 +1,6 @@
 package com.server.workspaceservice.dto;
 
+import com.server.workspaceservice.repository.WorkSpaceRepo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,6 +17,7 @@ public class UserDTO {
     private String email;
     private String name;
     private String avatar;
+    private WorkSpaceRepo role;
 
 
 }

@@ -201,9 +201,10 @@ const Column: React.FC<ColumnProps> = ({
 
 // ─── Board (main) ─────────────────────────────────────────────────────────────
 type Member = {
-  id: number;
+  // id: number;
   name: string;
   email: string;
+  userId: number;
 };
 const Board: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
