@@ -227,6 +227,7 @@ type Member = {
 };
 const Board: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
+  const [workspaceId, setWorkspaceId] = useState<number | null>(null);
   const { user } = useAuth();
   const numericBoardId = Number(boardId);
   const [boardBackground, setBoardBackground] = React.useState<string>("");
@@ -254,7 +255,7 @@ const Board: React.FC = () => {
           ),
           axiosIns.get<BoardList[]>(`${BASE}/list/${boardId}`),
         ]);
-
+        setWorkspaceId(boardRes.data.workspaceId);
         setBoardBackground(boardRes.data.backgroundImage);
         const membersRes = await axiosIns.get<Member[]>(
           `/api/workspace/member/${boardRes.data.workspaceId}`,

@@ -7,23 +7,20 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-// Data Transfer Object for BoardList responses and requests
+//DTO object for workspaces
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class BoardListDTO {
-
+public class WorkspaceDTO {
     private Long id;
 
-    private Long boardId;
-    private Long workspaceId;
     private String name;
 
-
-    private Integer position;
+    private Long ownerId;
 
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
 }

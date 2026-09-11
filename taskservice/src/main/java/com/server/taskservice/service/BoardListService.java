@@ -1,6 +1,9 @@
 package com.server.taskservice.service;
 
+import com.server.taskservice.client.WorkspaceClient;
 import com.server.taskservice.dto.BoardListDTO;
+import com.server.taskservice.dto.WorkspaceDTO;
+import com.server.taskservice.model.ActivityType;
 import com.server.taskservice.model.BoardList;
 import com.server.taskservice.repository.BoardListRepo;
 import com.server.taskservice.repository.CardRepo;
@@ -20,6 +23,8 @@ public class BoardListService {
 
     private final BoardListRepo boardListRepo;
     private final CardRepo cardRepo;
+    private final ActivityService activityService;
+    private final WorkspaceClient workspaceClient;
 
     // Fetch all lists for a board, already ordered by position
     public List<BoardListDTO> getListsByBoardId(Long boardId) {
@@ -30,7 +35,7 @@ public class BoardListService {
     }
 
     // Create a new list; auto-assigns the next position at the end
-    public BoardListDTO createList(BoardListDTO dto) {
+    public BoardListDTO createList(BoardListDTO dto, Long userId) {
         int nextPosition = boardListRepo
                 .findMaxPositionByBoardId(dto.getBoardId())
                 .map(max -> max + 1)
@@ -42,43 +47,78 @@ public class BoardListService {
                 .position(nextPosition)
                 .build();
 
+
         BoardList saved = boardListRepo.save(list);
+
+        WorkspaceDTO workspace =
+                workspaceClient.getWorkspaceByBoardId(dto.getBoardId());
+        activityService.createActivity(
+                userId,
+                workspace.getId(),
+                saved.getBoardId(),
+                saved.getId(),
+                null,
+                ActivityType.LIST_CREATED,
+                "created list \"" + saved.getName() + "\""
+        );
         log.info("Created list '{}' at position {} for board {}", saved.getName(), saved.getPosition(), saved.getBoardId());
         return toDTO(saved);
     }
 
     // Update the name (and optionally position) of a list
-    public BoardListDTO updateList(Long id, BoardListDTO dto) {
+    public BoardListDTO updateList(Long id, BoardListDTO dto, Long userId) {
         BoardList list = boardListRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
 
         if (dto.getName() != null && !dto.getName().isBlank()) {
             list.setName(dto.getName());
         }
-        if (dto.getPosition() != null) {
-            list.setPosition(dto.getPosition());
-        }
+
 
         BoardList updated = boardListRepo.save(list);
+
+        WorkspaceDTO workspace =
+                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+        activityService.createActivity(
+                userId,
+                workspace.getId(),
+                updated.getBoardId(),
+                updated.getId(),
+                null,
+                ActivityType.LIST_UPDATED,
+                "Updated list \"" + updated.getName() + "\""
+        );
         log.info("Updated list id={}", id);
         return toDTO(updated);
     }
 
     // Delete a list and all its cards (cascaded manually since entities are in the same service)
     @Transactional
-    public void deleteList(Long id) {
+    public void deleteList(Long id, Long userId) {
         BoardList list = boardListRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
 
         // Remove all cards belonging to this list first
+        WorkspaceDTO workspace =
+                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+        activityService.createActivity(
+                userId,
+                workspace.getId(),
+                list.getBoardId(),
+                list.getId(),
+                null,
+                ActivityType.LIST_DELETED,
+                "Deleted list \"" + list.getName() + "\""
+        );
         cardRepo.deleteByListId(id);
         boardListRepo.delete(list);
+
         log.info("Deleted list id={} and its cards", id);
     }
 
     // Move a list to a new position, shifting siblings accordingly
     @Transactional
-    public BoardListDTO reorderList(Long id, int newPosition) {
+    public BoardListDTO reorderList(Long id, int newPosition, Long userId) {
         BoardList list = boardListRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
 
@@ -111,6 +151,17 @@ public class BoardListService {
             siblings.get(index).setPosition(index);
         }
         boardListRepo.saveAll(siblings);
+        WorkspaceDTO workspace =
+                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+        activityService.createActivity(
+                userId,
+                workspace.getId(),
+                list.getBoardId(),
+                list.getId(),
+                null,
+                ActivityType.LIST_MOVED,
+                "Moved list \"" + list.getName() + "\""
+        );
         log.info("Reordered list id={} to position {}", id, targetIndex);
         return toDTO(list);
     }

@@ -27,6 +27,14 @@ public class WorkspaceController {
         return ResponseEntity.ok(workspaceService.getWorkspaceByWorkspaceId(workspaceId));
     }
 
+    //Endpoint to fetch workspace using boardId
+    @GetMapping("/get/{boardId}")
+    public ResponseEntity<WorkspaceDTO> getWorkspaceByBoardId(@PathVariable Long boardId) {
+
+
+        return ResponseEntity.ok(workspaceService.getWorkspaceByBoardId(boardId));
+    }
+
     //Endpoint to delete workspace using workspaceId
     @DeleteMapping("/{workspaceId}")
     public ResponseEntity<String> deleteWorkspace(@PathVariable Long workspaceId, @AuthenticationPrincipal Jwt jwt) {

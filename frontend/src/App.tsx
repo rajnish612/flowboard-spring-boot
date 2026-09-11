@@ -7,6 +7,7 @@ import Dashboard from "./components/workspace/Dashboard";
 import { ProtectedRoute } from "./wrappers/ProtectedRoute";
 import Members from "./components/workspace/contents/Members";
 import Settings from "./components/workspace/contents/Settings";
+import Activities from "./components/workspace/contents/Activities";
 
 const App = () => {
   return (
@@ -30,6 +31,7 @@ const App = () => {
             <Route path="boards/:workspaceId" element={<Boards />} />
             <Route path="members/:workspaceId" element={<Members />} />
             <Route path="settings/:workspaceId" element={<Settings />} />
+            <Route path="activities/:workspaceId" element={<Activities />} />
           </Route>
           <Route
             path="board/:boardId"

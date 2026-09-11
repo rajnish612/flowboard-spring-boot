@@ -35,6 +35,24 @@ public class WorkspaceService {
 
     }
 
+    //Method to get workspace using board id
+    public WorkspaceDTO getWorkspaceByBoardId(Long boardId) {
+
+        Board board = boardRepo.findById(boardId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Board not found: " + boardId
+                        )
+                );
+
+        return workSpaceRepo.findById(board.getWorkspaceId()).map(w -> WorkspaceDTO.builder().name(w.getName()).id(w.getId()).ownerId(w.getOwnerId()).build()).orElseThrow(() ->
+                new EntityNotFoundException(
+                        "Board not found: " + boardId
+                )
+        );
+
+    }
+
     //Method to delete workspace
     public void deleteWorkspace(Long id, Long userId) {
         boolean hasAccess = workSpaceRepo.checkIsOwner(userId, id);

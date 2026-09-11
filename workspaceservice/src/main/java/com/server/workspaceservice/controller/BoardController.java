@@ -1,8 +1,10 @@
 package com.server.workspaceservice.controller;
 
 import com.server.workspaceservice.dto.BoardDTO;
+import com.server.workspaceservice.dto.WorkspaceDTO;
 import com.server.workspaceservice.model.Board;
 import com.server.workspaceservice.service.BoardService;
+import com.server.workspaceservice.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,7 @@ public class BoardController {
 
     private static final Logger log = LoggerFactory.getLogger(BoardController.class);
     private final BoardService boardService;
+    private final WorkspaceService workspaceService;
 
     //Endpoint to fetch boards using workspaceId
     @GetMapping("/{workspaceId}")
@@ -29,6 +32,8 @@ public class BoardController {
         List<BoardDTO> boards = boardService.getBoardsByWorkspaceId(workspaceId);
         return ResponseEntity.ok(boards);
     }
+
+
 
     //Endpoint to fetch board using boardId
     @GetMapping("/detail/{boardId}")

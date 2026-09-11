@@ -41,8 +41,9 @@ public class BoardListController {
     )
     @PostMapping("/create")
     public ResponseEntity<BoardListDTO> createList(@RequestBody BoardListDTO dto, @AuthenticationPrincipal Jwt jwt) {
-        BoardListDTO created = boardListService.createList(dto);
         Long userId = jwt.getClaim("userId");
+        BoardListDTO created = boardListService.createList(dto, userId);
+
         boardEventPublisher.publish(userId, "LIST_CREATED", dto.getBoardId(), created);
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
@@ -53,8 +54,9 @@ public class BoardListController {
     )
     @PutMapping("/{id}")
     public ResponseEntity<BoardListDTO> updateList(@PathVariable Long id, @RequestBody BoardListDTO dto, @AuthenticationPrincipal Jwt jwt) {
-        BoardListDTO updated = boardListService.updateList(id, dto);
         Long userId = jwt.getClaim("userId");
+
+        BoardListDTO updated = boardListService.updateList(id, dto, userId);
 
         boardEventPublisher.publish(userId, "LIST_UPDATED", updated.getBoardId(), updated);
         return ResponseEntity.ok(updated);
@@ -66,8 +68,9 @@ public class BoardListController {
     )
     @DeleteMapping("/{id}/{boardId}")
     public ResponseEntity<Void> deleteList(@PathVariable Long id, @PathVariable Long boardId, @AuthenticationPrincipal Jwt jwt) {
-        boardListService.deleteList(id);
         Long userId = jwt.getClaim("userId");
+
+        boardListService.deleteList(id, userId);
 
         boardEventPublisher.publish(userId, "LIST_DELETED", boardId, id);
         return ResponseEntity.noContent().build();
@@ -85,8 +88,9 @@ public class BoardListController {
         if (newPosition == null) {
             return ResponseEntity.badRequest().build();
         }
-        BoardListDTO reordered = boardListService.reorderList(id, newPosition);
         Long userId = jwt.getClaim("userId");
+        BoardListDTO reordered = boardListService.reorderList(id, newPosition, userId);
+
         boardEventPublisher.publish(userId, "LIST_REORDERED", reordered.getBoardId(), reordered);
         return ResponseEntity.ok(reordered);
     }
