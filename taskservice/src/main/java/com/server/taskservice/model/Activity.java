@@ -25,6 +25,7 @@ public class Activity {
     @Column(nullable = false)
     private Long workspaceId;
 
+    private Long assignedTo;
     @Column(nullable = false)
     private Long boardId;
 

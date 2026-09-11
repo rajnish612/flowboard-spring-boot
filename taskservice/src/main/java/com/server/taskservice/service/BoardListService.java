@@ -59,7 +59,8 @@ public class BoardListService {
                 saved.getId(),
                 null,
                 ActivityType.LIST_CREATED,
-                "created list \"" + saved.getName() + "\""
+                "created list \"" + saved.getName() + "\"",
+                null
         );
         log.info("Created list '{}' at position {} for board {}", saved.getName(), saved.getPosition(), saved.getBoardId());
         return toDTO(saved);
@@ -86,7 +87,8 @@ public class BoardListService {
                 updated.getId(),
                 null,
                 ActivityType.LIST_UPDATED,
-                "Updated list \"" + updated.getName() + "\""
+                "Updated list \"" + updated.getName() + "\"",
+                null
         );
         log.info("Updated list id={}", id);
         return toDTO(updated);
@@ -108,7 +110,8 @@ public class BoardListService {
                 list.getId(),
                 null,
                 ActivityType.LIST_DELETED,
-                "Deleted list \"" + list.getName() + "\""
+                "Deleted list \"" + list.getName() + "\"",
+                null
         );
         cardRepo.deleteByListId(id);
         boardListRepo.delete(list);
@@ -160,7 +163,8 @@ public class BoardListService {
                 list.getId(),
                 null,
                 ActivityType.LIST_MOVED,
-                "Moved list \"" + list.getName() + "\""
+                "Moved list \"" + list.getName() + "\"",
+                null
         );
         log.info("Reordered list id={} to position {}", id, targetIndex);
         return toDTO(list);

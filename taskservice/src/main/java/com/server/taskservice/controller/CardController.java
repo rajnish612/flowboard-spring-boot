@@ -38,8 +38,9 @@ public class CardController {
     // POST /card/create — create a new card
     @PostMapping("/create/{boardId}")
     public ResponseEntity<CardDTO> createCard(@PathVariable Long boardId, @RequestBody CardDTO dto, @AuthenticationPrincipal Jwt jwt) {
-        CardDTO created = cardService.createCard(dto);
         Long userId = jwt.getClaim("userId");
+        CardDTO created = cardService.createCard(dto, userId);
+
         boardEventPublisher.publish(userId, "CARD_CREATED", boardId, created);
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
@@ -50,9 +51,9 @@ public class CardController {
     )
     @PutMapping("/{id}/{boardId}")
     public ResponseEntity<CardDTO> updateCard(@PathVariable Long id, @PathVariable Long boardId, @RequestBody CardDTO dto, @AuthenticationPrincipal Jwt jwt) {
-
-        CardDTO updated = cardService.updateCard(id, dto);
         Long userId = jwt.getClaim("userId");
+
+        CardDTO updated = cardService.updateCard(id, dto, userId);
         boardEventPublisher.publish(userId, "CARD_UPDATED", boardId, updated);
         return ResponseEntity.ok(updated);
     }
@@ -63,8 +64,9 @@ public class CardController {
     )
     @DeleteMapping("/{id}/{boardId}")
     public ResponseEntity<Void> deleteCard(@PathVariable Long id, @PathVariable Long boardId, @AuthenticationPrincipal Jwt jwt) {
-        cardService.deleteCard(id);
         Long userId = jwt.getClaim("userId");
+
+        cardService.deleteCard(id, userId);
         boardEventPublisher.publish(userId, "CARD_DELETED", boardId, id);
         return ResponseEntity.noContent().build();
     }
@@ -87,9 +89,9 @@ public class CardController {
         if (targetListId == null || position == null) {
             return ResponseEntity.badRequest().build();
         }
-
-        CardDTO moved = cardService.moveCard(id, targetListId, position);
         Long userId = jwt.getClaim("userId");
+
+        CardDTO moved = cardService.moveCard(id, targetListId, position, userId);
         boardEventPublisher.publish(userId, "CARD_MOVED", boardId, moved);
         return ResponseEntity.ok(moved);
     }

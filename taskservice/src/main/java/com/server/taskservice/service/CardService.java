@@ -1,9 +1,14 @@
 package com.server.taskservice.service;
 
 import com.server.taskservice.client.AuthClient;
+import com.server.taskservice.client.WorkspaceClient;
 import com.server.taskservice.dto.CardDTO;
 import com.server.taskservice.dto.UserDTO;
+import com.server.taskservice.dto.WorkspaceDTO;
+import com.server.taskservice.model.ActivityType;
+import com.server.taskservice.model.BoardList;
 import com.server.taskservice.model.Card;
+import com.server.taskservice.repository.BoardListRepo;
 import com.server.taskservice.repository.CardRepo;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +29,10 @@ import java.util.stream.Collectors;
 public class CardService {
 
     private final CardRepo cardRepo;
+    private final BoardListRepo boardListRepo;
     private final AuthClient authClient;
+    private final ActivityService activityService;
+    private final WorkspaceClient workspaceClient;
 
     // Fetch all cards for a list, already ordered by position
     public List<CardDTO> getCardsByListId(Long listId) {
@@ -62,7 +70,7 @@ public class CardService {
     }
 
     // Create a new card; auto-assigns the next position at the end of the list
-    public CardDTO createCard(CardDTO dto) {
+    public CardDTO createCard(CardDTO dto, Long userId) {
         int nextPosition = cardRepo
                 .findMaxPositionByListId(dto.getListId())
                 .map(max -> max + 1)
@@ -76,14 +84,27 @@ public class CardService {
                 .assignedTo(dto.getAssignedTo())
                 .dueDate(dto.getDueDate())
                 .build();
-
+        BoardList list = boardListRepo.findById(card.getListId()).orElseThrow(() -> new EntityNotFoundException("List not found"));
+        WorkspaceDTO workspace =
+                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
         Card saved = cardRepo.save(card);
+
+        activityService.createActivity(
+                userId,
+                workspace.getId(),
+                list.getBoardId(),
+                list.getId(),
+                saved.getId(),
+                ActivityType.CARD_CREATED,
+                "Card created \"" + saved.getTitle() + "\"",
+                null
+        );
         log.info("Created card '{}' at position {} in list {}", saved.getTitle(), saved.getPosition(), saved.getListId());
         return toDTO(saved);
     }
 
     // Update card fields (title, description, dueDate, assignedTo, position)
-    public CardDTO updateCard(Long id, CardDTO dto) {
+    public CardDTO updateCard(Long id, CardDTO dto, Long userId) {
         Card card = cardRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Card not found: " + id));
 
@@ -96,6 +117,7 @@ public class CardService {
         if (dto.getDueDate() != null) {
             card.setDueDate(dto.getDueDate());
         }
+        Long oldAssignedTo = card.getAssignedTo();
 
         card.setAssignedTo(dto.getAssignedTo());
         log.info("assigned to = {}", dto.getAssignedTo());
@@ -103,31 +125,98 @@ public class CardService {
             card.setPosition(dto.getPosition());
         }
 
+        BoardList list = boardListRepo.findById(card.getListId()).orElseThrow(() -> new EntityNotFoundException("List not found"));
+        WorkspaceDTO workspace =
+                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+
         Card updated = cardRepo.save(card);
 
+        if (!Objects.equals(oldAssignedTo, updated.getAssignedTo())) {
 
+            String message;
+
+            if (updated.getAssignedTo() == null) {
+
+                message = "unassigned card \"" + updated.getTitle() + "\"";
+
+            } else {
+
+                UserDTO assignedUser =
+                        authClient.getProfile(updated.getAssignedTo());
+
+                message = "assigned card \"" +
+                        updated.getTitle() +
+                        "\" to " +
+                        assignedUser.getName();
+            }
+
+            activityService.createActivity(
+                    userId,
+                    workspace.getId(),
+                    list.getBoardId(),
+                    list.getId(),
+                    updated.getId(),
+                    ActivityType.CARD_ASSIGNED,
+                    message,
+                    updated.getAssignedTo()
+
+            );
+        } else {
+            activityService.createActivity(
+                    userId,
+                    workspace.getId(),
+                    list.getBoardId(),
+                    list.getId(),
+                    updated.getId(),
+                    ActivityType.CARD_UPDATED,
+                    "Updated card \"" + updated.getTitle() + "\"",
+                    null
+            );
+        }
         log.info("Updated card id = {}", id);
         return toDTO(updated);
     }
 
     // Delete a card by id
-    public void deleteCard(Long id) {
-        if (!cardRepo.existsById(id)) {
-            throw new EntityNotFoundException("Card not found: " + id);
-        }
+    public void deleteCard(Long id, Long userId) {
+        Card card = cardRepo.findById(id)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Card not found: " + id)
+                );
+
+        BoardList list = boardListRepo.findById(card.getListId()).orElseThrow(() -> new EntityNotFoundException("List not found"));
+        WorkspaceDTO workspace =
+                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+        activityService.createActivity(
+                userId,
+                workspace.getId(),
+                list.getBoardId(),
+                list.getId(),
+                id,
+                ActivityType.CARD_DELETED,
+                "Card deleted \"" + card.getTitle() + "\"",
+                null
+        );
+
         cardRepo.deleteById(id);
         log.info("Deleted card id={}", id);
     }
 
     // Move a card to a target list at a specific position, reordering both source and target lists
     @Transactional
-    public CardDTO moveCard(Long cardId, Long targetListId, int newPosition) {
+    public CardDTO moveCard(Long cardId, Long targetListId, int newPosition, Long userId) {
         Card card = cardRepo.findById(cardId)
                 .orElseThrow(() -> new EntityNotFoundException("Card not found: " + cardId));
 
         Long sourceListId = card.getListId();
         int oldPosition = card.getPosition();
-
+        BoardList targetList = boardListRepo.findById(targetListId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Target list not found: " + targetListId)
+                );
+        BoardList sourceList = boardListRepo.findById(sourceListId).orElseThrow(() ->
+                new EntityNotFoundException("Source list not found: " + sourceListId)
+        );
         boolean isSameList = sourceListId.equals(targetListId);
 
         if (isSameList) {
@@ -170,7 +259,39 @@ public class CardService {
         }
 
         card.setPosition(newPosition);
+
+
         Card moved = cardRepo.save(card);
+
+
+        String message;
+
+        if (isSameList) {
+            message = "moved card \""
+                    + moved.getTitle()
+                    + "\" to position "
+                    + newPosition;
+        } else {
+            message = "moved card \""
+                    + moved.getTitle()
+                    + "\" from \""
+                    + sourceList.getName()
+                    + "\" to \""
+                    + targetList.getName()
+                    + "\"";
+        }
+        WorkspaceDTO workspace =
+                workspaceClient.getWorkspaceByBoardId(targetList.getBoardId());
+        activityService.createActivity(
+                userId,
+                workspace.getId(),
+                targetList.getBoardId(),
+                targetList.getId(),
+                moved.getId(),
+                ActivityType.CARD_MOVED,
+                message,
+                null
+        );
         log.info("Moved card id={} to list {} at position {}", cardId, targetListId, newPosition);
         return toDTO(moved);
     }

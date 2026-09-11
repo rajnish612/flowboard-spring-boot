@@ -19,7 +19,8 @@ public class ActivityService {
             Long listId,
             Long cardId,
             ActivityType type,
-            String message
+            String message,
+            Long assignedTo
     ) {
 
         Activity activity = Activity.builder()
@@ -30,6 +31,7 @@ public class ActivityService {
                 .cardId(cardId)
                 .type(type)
                 .message(message)
+                .assignedTo(assignedTo)
                 .build();
 
         return activityRepo.save(activity);
