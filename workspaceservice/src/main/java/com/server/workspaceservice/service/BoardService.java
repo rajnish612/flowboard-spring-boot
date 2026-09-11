@@ -32,6 +32,7 @@ public class BoardService {
                         .id(b.getId())
                         .workspaceId(b.getWorkspaceId())
                         .name(b.getName())
+                        .description(b.getDescription())
                         .backgroundImage(b.getBackgroundImage())
                         .build()).toList();
     }

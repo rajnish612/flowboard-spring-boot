@@ -19,12 +19,17 @@ const BASE = "/api/task";
 
 type ColumnProps = {
   list: BoardList;
+  listIndex: number;
   cards: Card[];
   onAddCard: (listId: number, title: string) => Promise<void>;
   onDeleteCard: (cardId: number, listId: number) => void;
   onClickCard: (card: Card) => void;
   onDeleteList: (listId: number) => void;
   onRenameList: (listId: number, newName: string) => Promise<void>;
+  onDragStartList: (e: React.DragEvent, listId: number) => void;
+  onDragEndList: () => void;
+  isListDragging: () => boolean;
+  onDropList: (e: React.DragEvent, targetIndex: number) => void;
   onDragStartCard: (e: React.DragEvent, card: Card) => void;
   onDropCard: (
     e: React.DragEvent,
@@ -35,12 +40,17 @@ type ColumnProps = {
 
 const Column: React.FC<ColumnProps> = ({
   list,
+  listIndex,
   cards,
   onAddCard,
   onDeleteCard,
   onClickCard,
   onDeleteList,
   onRenameList,
+  onDragStartList,
+  onDragEndList,
+  isListDragging,
+  onDropList,
   onDragStartCard,
   onDropCard,
 }) => {
@@ -62,7 +72,7 @@ const Column: React.FC<ColumnProps> = ({
 
   return (
     <div
-      className={`flex flex-col w-64 flex-shrink-0 rounded-2xl shadow-sm transition-colors ${
+      className={`flex flex-col w-64 shrink-0 rounded-2xl shadow-sm transition-colors ${
         dragOver ? "bg-indigo-50/80 ring-2 ring-indigo-300" : "bg-gray-100/80"
       }`}
       onDragOver={(e) => {
@@ -72,11 +82,20 @@ const Column: React.FC<ColumnProps> = ({
       onDragLeave={() => setDragOver(false)}
       onDrop={(e) => {
         setDragOver(false);
-        onDropCard(e, list.id, cards.length);
+        if (isListDragging()) {
+          onDropList(e, listIndex);
+        } else {
+          onDropCard(e, list.id, cards.length);
+        }
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 pt-3 pb-2">
+      <div
+        draggable
+        onDragStart={(e) => onDragStartList(e, list.id)}
+        onDragEnd={onDragEndList}
+        className="flex items-center justify-between px-3 pt-3 pb-2 cursor-grab active:cursor-grabbing"
+      >
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {isEditing ? (
             <input
@@ -102,7 +121,7 @@ const Column: React.FC<ColumnProps> = ({
               {list.name}
             </h3>
           )}
-          <span className="text-xs text-gray-400 bg-gray-200 rounded-full px-1.5 py-0.5 font-medium flex-shrink-0">
+          <span className="text-xs text-gray-400 bg-gray-200 rounded-full px-1.5 py-0.5 font-medium shrink-0">
             {cards.length}
           </span>
         </div>
@@ -221,6 +240,7 @@ const Board: React.FC = () => {
 
   // Drag state stored in a ref to avoid re-renders
   const dragCard = useRef<Card | null>(null);
+  const dragListId = useRef<number | null>(null);
   // ── Initial load ────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -255,7 +275,7 @@ const Board: React.FC = () => {
 
         setCards(Object.fromEntries(entries));
         setLoading(true);
-      } catch (err) {
+      } catch {
         setError("Failed to load board. Please try again.");
       } finally {
         setLoading(false);
@@ -289,14 +309,76 @@ const Board: React.FC = () => {
   }, []);
 
   const handleDeleteList = useCallback(async (listId: number) => {
-    await axiosIns.delete(`${BASE}/list/${listId}`);
+    await axiosIns.delete(`${BASE}/list/${listId}/${numericBoardId}`);
     setLists((prev) => prev.filter((l) => l.id !== listId));
     setCards((prev) => {
       const next = { ...prev };
       delete next[listId];
       return next;
     });
+  }, [numericBoardId]);
+
+  const handleDragStartList = useCallback(
+    (e: React.DragEvent, listId: number) => {
+      dragListId.current = listId;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("application/x-board-list", String(listId));
+    },
+    [],
+  );
+
+  const handleDragEndList = useCallback(() => {
+    dragListId.current = null;
   }, []);
+
+  const isListDragging = useCallback(() => dragListId.current !== null, []);
+
+  const handleDropList = useCallback(
+    async (e: React.DragEvent, targetIndex: number) => {
+      e.preventDefault();
+      const listId = dragListId.current;
+      dragListId.current = null;
+      if (listId === null) return;
+
+      const previousLists = lists;
+      const sourceIndex = previousLists.findIndex((item) => item.id === listId);
+      if (sourceIndex === -1) return;
+
+      const nextLists = [...previousLists];
+      const [movedList] = nextLists.splice(sourceIndex, 1);
+      const calculatedPosition = sourceIndex < targetIndex
+        ? targetIndex - 1
+        : targetIndex;
+      const newPosition = Math.max(
+        0,
+        Math.min(
+          nextLists.length,
+          calculatedPosition === sourceIndex && targetIndex > sourceIndex
+            ? sourceIndex + 1
+            : calculatedPosition,
+        ),
+      );
+      nextLists.splice(newPosition, 0, movedList);
+      setLists(nextLists.map((item, position) => ({ ...item, position })));
+
+      try {
+        const response = await axiosIns.post<BoardList>(
+          `${BASE}/list/${listId}/reorder`,
+          { position: newPosition },
+        );
+        setLists((current) =>
+          current
+            .map((item) => (item.id === listId ? response.data : item))
+            .sort((a, b) => a.position - b.position),
+        );
+      } catch (moveError) {
+        console.error("List move request failed", moveError);
+        setLists(previousLists);
+        setError("Failed to move list. Please try again.");
+      }
+    },
+    [lists],
+  );
 
   // ── Card actions ────────────────────────────────────────────────────────────
   const handleAddCard = useCallback(async (listId: number, title: string) => {
@@ -310,7 +392,7 @@ const Board: React.FC = () => {
       ...prev,
       [listId]: [...(prev[listId] ?? []), newCard],
     }));
-  }, []);
+  }, [boardId]);
 
   const handleDeleteCard = useCallback(
     async (cardId: number, listId: number) => {
@@ -321,7 +403,7 @@ const Board: React.FC = () => {
       }));
       setSelectedCard(null);
     },
-    [],
+    [boardId],
   );
 
   const handleSaveCard = useCallback((updated: Card) => {
@@ -393,7 +475,7 @@ const Board: React.FC = () => {
         })
         .then((r) => r.data);
     },
-    [],
+    [boardId],
   );
 
   //Board socket events management
@@ -568,16 +650,21 @@ const Board: React.FC = () => {
 
       {/* Columns */}
       <div className="flex items-start gap-4 px-6 py-4 overflow-x-auto flex-1">
-        {lists.map((list) => (
+        {lists.map((list, listIndex) => (
           <Column
             key={list.id}
             list={list}
+            listIndex={listIndex}
             cards={cards[list.id] ?? []}
             onAddCard={handleAddCard}
             onDeleteCard={handleDeleteCard}
             onClickCard={setSelectedCard}
             onDeleteList={handleDeleteList}
             onRenameList={handleRenameList}
+            onDragStartList={handleDragStartList}
+            onDragEndList={handleDragEndList}
+            isListDragging={isListDragging}
+            onDropList={handleDropList}
             onDragStartCard={handleDragStart}
             onDropCard={handleDrop}
           />
@@ -591,7 +678,7 @@ const Board: React.FC = () => {
         ) : (
           <button
             onClick={() => setAddingList(true)}
-            className="flex items-center gap-2 w-64 flex-shrink-0 px-4 py-3 rounded-2xl bg-white/20 hover:bg-white/30 text-white text-sm font-medium transition-colors backdrop-blur-sm"
+            className="flex items-center gap-2 w-64 shrink-0 px-4 py-3 rounded-2xl bg-white/20 hover:bg-white/30 text-white text-sm font-medium transition-colors backdrop-blur-sm"
           >
             <svg
               className="h-4 w-4"

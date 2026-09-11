@@ -16,7 +16,9 @@ type Board = {
   backgroundImage: string;
 };
 
-const BoardCard: React.FC<Board> = ({ backgroundImage, name }) => {
+const BoardCard: React.FC<Board> = ({ backgroundImage, name, description }) => {
+  console.log("description", description);
+
   return (
     <div
       style={
@@ -34,8 +36,13 @@ const BoardCard: React.FC<Board> = ({ backgroundImage, name }) => {
       <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-200" />
 
       {/* Board title */}
-      <span className="absolute top-3 left-3 z-10 text-white font-semibold text-sm drop-shadow-md">
+      <span className="absolute top-3 left-3 right-3 z-10 text-white font-semibold text-sm drop-shadow-md truncate">
         {name}
+      </span>
+
+      {/* Board description */}
+      <span className="absolute top-9 left-3 right-3 z-10 text-white/80 text-xs leading-4 line-clamp-2 drop-shadow-md">
+        {description || "No description available"}
       </span>
 
       {/* Star icon */}
@@ -94,6 +101,7 @@ const Boards: React.FC = () => {
   const [boards, setBoards] = React.useState<Board[]>([]);
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const [boardDTO, setBoardDTO] = useState<Board>({
+    backgroundImage: "",
     name: "",
     description: "",
   });
@@ -134,6 +142,7 @@ const Boards: React.FC = () => {
         setBoards((prev) => [...prev, res.data]);
 
         setBoardDTO({
+          backgroundImage: "",
           name: "",
           description: "",
         });
@@ -159,6 +168,7 @@ const Boards: React.FC = () => {
     if (creating) return;
 
     setBoardDTO({
+      backgroundImage: "",
       name: "",
       description: "",
     });

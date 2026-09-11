@@ -74,7 +74,7 @@ public class BoardListController {
     }
 
     // PATCH /list/{id}/reorder — move a list to a new position
-    @PatchMapping("/{id}/reorder")
+    @RequestMapping(value = "/{id}/reorder", method = {RequestMethod.PATCH, RequestMethod.POST})
     @PreAuthorize(
             "@taskAuthorization.hasListAccess(#id, authentication)"
     )

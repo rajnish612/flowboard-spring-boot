@@ -23,7 +23,7 @@ export const deleteList = (id: number) =>
 
 export const reorderList = (id: number, position: number) =>
   axiosIns
-    .patch<BoardList>(`${BASE}/list/${id}/reorder`, { position })
+    .post<BoardList>(`${BASE}/list/${id}/reorder`, { position })
     .then((r) => r.data);
 
 // ─── Card endpoints ────────────────────────────────────────────────────────

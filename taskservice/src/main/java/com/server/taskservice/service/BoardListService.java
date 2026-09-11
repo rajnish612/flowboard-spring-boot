@@ -82,31 +82,37 @@ public class BoardListService {
         BoardList list = boardListRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
 
-        int oldPosition = list.getPosition();
-        if (oldPosition == newPosition) {
+        List<BoardList> siblings = boardListRepo.findByBoardIdOrderByPositionAsc(list.getBoardId());
+        int sourceIndex = siblings.stream()
+                .map(BoardList::getId)
+                .toList()
+                .indexOf(id);
+        if (sourceIndex < 0) {
+            throw new EntityNotFoundException("List not found in board: " + id);
+        }
+        int targetIndex = Math.max(0, Math.min(newPosition, siblings.size() - 1));
+        if (sourceIndex == targetIndex) {
             return toDTO(list);
         }
 
-        List<BoardList> siblings = boardListRepo.findByBoardIdOrderByPositionAsc(list.getBoardId());
+        siblings.remove(sourceIndex);
+        siblings.add(targetIndex, list);
 
-        // Shift siblings to make room for the new position
-        for (BoardList sibling : siblings) {
-            if (sibling.getId().equals(id)) continue;
-
-            int pos = sibling.getPosition();
-            if (oldPosition < newPosition && pos > oldPosition && pos <= newPosition) {
-                sibling.setPosition(pos - 1);
-                boardListRepo.save(sibling);
-            } else if (oldPosition > newPosition && pos >= newPosition && pos < oldPosition) {
-                sibling.setPosition(pos + 1);
-                boardListRepo.save(sibling);
-            }
+        int temporaryStart = siblings.stream()
+                .mapToInt(BoardList::getPosition)
+                .max()
+                .orElse(0) + siblings.size() + 1;
+        for (int index = 0; index < siblings.size(); index++) {
+            siblings.get(index).setPosition(temporaryStart + index);
         }
+        boardListRepo.saveAllAndFlush(siblings);
 
-        list.setPosition(newPosition);
-        BoardList updated = boardListRepo.save(list);
-        log.info("Reordered list id={} from position {} to {}", id, oldPosition, newPosition);
-        return toDTO(updated);
+        for (int index = 0; index < siblings.size(); index++) {
+            siblings.get(index).setPosition(index);
+        }
+        boardListRepo.saveAll(siblings);
+        log.info("Reordered list id={} to position {}", id, targetIndex);
+        return toDTO(list);
     }
 
     // Helper: convert entity to DTO
