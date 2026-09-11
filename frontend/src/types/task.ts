@@ -17,6 +17,7 @@ export type Card = {
   position: number;
   assignedTo?: number;
   assignedToName?: string;
+  assignedToEmail?: string;
   assignedToAvatar?: string;
   dueDate?: string;
   createdAt?: string;

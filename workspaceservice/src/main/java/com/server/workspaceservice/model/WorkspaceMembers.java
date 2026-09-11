@@ -35,6 +35,9 @@ public class WorkspaceMembers {
     @Column(nullable = false)
     private Long userId;
 
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private WorkspaceRole role = WorkspaceRole.MEMBER;
 
     @CreationTimestamp
     private LocalDateTime joinedAt;

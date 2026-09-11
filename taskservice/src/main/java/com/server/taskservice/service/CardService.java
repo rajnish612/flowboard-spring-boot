@@ -193,7 +193,9 @@ public class CardService {
 
             builder
                     .assignedToName(user.getName())
+                    .assignedToEmail(user.getEmail())
                     .assignedToAvatar(user.getAvatar());
+
         }
 
         return builder.build();

@@ -25,6 +25,7 @@ public class CardDTO {
     private Integer position;
 
     private Long assignedTo;
+    private String assignedToEmail;
     private String assignedToName;
     private String assignedToAvatar;
     private LocalDateTime dueDate;

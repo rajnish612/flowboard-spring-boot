@@ -49,9 +49,10 @@ public class WorkspaceController {
 
     //End point to create a workspace
     @PostMapping("create")
-    public ResponseEntity<WorkspaceDTO> createWorkspace(@RequestBody WorkspaceDTO workspace) {
+    public ResponseEntity<WorkspaceDTO> createWorkspace(@RequestBody WorkspaceDTO workspace, @AuthenticationPrincipal Jwt jwt) {
 
-        WorkspaceDTO newWorkspace = workspaceService.createWorkspace(workspace);
+        Long userId = jwt.getClaim("userId");
+        WorkspaceDTO newWorkspace = workspaceService.createWorkspace(workspace, userId);
         return ResponseEntity.ok(newWorkspace);
     }
 

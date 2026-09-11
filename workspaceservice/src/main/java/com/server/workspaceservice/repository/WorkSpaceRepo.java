@@ -29,4 +29,10 @@ public interface WorkSpaceRepo extends JpaRepository<Workspace, Long> {
 
     //Check if the user is owner of the workspace
     boolean existsByIdAndOwnerId(Long workspaceId, Long ownerId);
+
+    //Fetch workspaces using workspaceId and not equal to owner id
+    List<Workspace> findByIdInAndOwnerIdNot(
+            List<Long> ids,
+            Long ownerId
+    );
 }

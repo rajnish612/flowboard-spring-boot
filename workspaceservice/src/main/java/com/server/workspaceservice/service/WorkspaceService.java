@@ -5,10 +5,12 @@ import com.server.workspaceservice.dto.*;
 import com.server.workspaceservice.model.Board;
 import com.server.workspaceservice.model.Workspace;
 import com.server.workspaceservice.model.WorkspaceMembers;
+import com.server.workspaceservice.model.WorkspaceRole;
 import com.server.workspaceservice.repository.BoardRepo;
 import com.server.workspaceservice.repository.WorkSpaceRepo;
 import com.server.workspaceservice.repository.WorkspaceMemberRepo;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -41,13 +43,21 @@ public class WorkspaceService {
     }
 
     //Method to create new workspace
-    public WorkspaceDTO createWorkspace(WorkspaceDTO workspaceDTO) {
+    @Transactional
+    public WorkspaceDTO createWorkspace(WorkspaceDTO workspaceDTO, Long userId) {
         Workspace workspace = Workspace.builder()
                 .name(workspaceDTO.getName())
                 .ownerId(workspaceDTO.getOwnerId())
                 .build();
 
         Workspace newWorkspace = workSpaceRepo.save(workspace);
+
+        WorkspaceMembers member = WorkspaceMembers.builder()
+                .workspaceId(newWorkspace.getId())
+                .role(WorkspaceRole.OWNER)
+                .userId(userId)
+                .build();
+        workspaceMemberRepo.save(member);
         return WorkspaceDTO.builder()
                 .id(newWorkspace.getId())
                 .name(newWorkspace.getName())
@@ -82,7 +92,7 @@ public class WorkspaceService {
             return List.of();
         }
 
-        return workSpaceRepo.findByIdIn(workspaceIds)
+        return workSpaceRepo.findByIdInAndOwnerIdNot(workspaceIds, userId)
                 .stream()
                 .map(workspace -> WorkspaceDTO.builder()
                         .id(workspace.getId())
@@ -114,6 +124,7 @@ public class WorkspaceService {
 
         WorkspaceMembers member = WorkspaceMembers.builder()
                 .workspaceId(addMemberDTO.getWorkspaceId())
+                .role(WorkspaceRole.MEMBER)
                 .userId(user.getId())
                 .build();
 
