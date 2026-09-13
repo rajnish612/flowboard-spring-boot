@@ -19,4 +19,7 @@ public interface WorkspaceClient {
     @GetMapping("/get/{boardId}")
     public WorkspaceDTO getWorkspaceByBoardId(@PathVariable Long boardId);
 
+    @GetMapping("/{workspaceId}")
+    public WorkspaceDTO getWorkspaceByWorkspaceId(@PathVariable Long workspaceId);
+
 }
