@@ -1,74 +1,54 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Clock3,
   Plus,
   MoveRight,
   UserPlus,
+  UserMinus,
   Pencil,
   Trash2,
 } from "lucide-react";
+import { useParams } from "react-router";
+import { axiosIns } from "../../../utils/axiosInstance";
 
 type Activity = {
   id: number;
+
+  userId: number;
   userName: string;
   userAvatar?: string;
-  action: string;
-  target: string;
+
+  action:
+    | "CREATED"
+    | "MOVED"
+    | "ASSIGNED"
+    | "UNASSIGNED"
+    | "UPDATED"
+    | "DELETED";
+  message: string;
+
+  assignedToName?: string;
+  assignedToAvatar?: string;
+
   boardName: string;
+
   createdAt: string;
-  type: "CREATED" | "MOVED" | "ASSIGNED" | "UPDATED" | "DELETED";
+
+  type:
+    | "CARD_CREATED"
+    | "CARD_UPDATED"
+    | "CARD_MOVED"
+    | "CARD_DELETED"
+    | "CARD_ASSIGNED"
+    | "CARD_UNASSIGNED"
+    | "LIST_CREATED"
+    | "LIST_UPDATED"
+    | "LIST_MOVED"
+    | "LIST_DELETED";
 };
 
-const activities: Activity[] = [
-  {
-    id: 1,
-    userName: "Rajnish",
-    action: "created",
-    target: "Login page",
-    boardName: "Website Development",
-    createdAt: "10:42 AM",
-    type: "CREATED",
-  },
-  {
-    id: 2,
-    userName: "Rahul",
-    action: "moved",
-    target: "Dashboard",
-    boardName: "Website Development",
-    createdAt: "10:18 AM",
-    type: "MOVED",
-  },
-  {
-    id: 3,
-    userName: "Ankit",
-    action: "was assigned to",
-    target: "Fix authentication",
-    boardName: "Website Development",
-    createdAt: "9:52 AM",
-    type: "ASSIGNED",
-  },
-  {
-    id: 4,
-    userName: "Rajnish",
-    action: "updated",
-    target: "Payment API",
-    boardName: "Website Development",
-    createdAt: "Yesterday, 6:30 PM",
-    type: "UPDATED",
-  },
-  {
-    id: 5,
-    userName: "Rahul",
-    action: "deleted",
-    target: "Old login task",
-    boardName: "Website Development",
-    createdAt: "Yesterday, 5:12 PM",
-    type: "DELETED",
-  },
-];
-
-const ActivityIcon = ({ type }: { type: Activity["type"] }) => {
-  switch (type) {
+const ActivityIcon = ({ action }: { action: Activity["action"] }) => {
+  switch (action) {
     case "CREATED":
       return (
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 text-green-600">
@@ -87,6 +67,13 @@ const ActivityIcon = ({ type }: { type: Activity["type"] }) => {
       return (
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-100 text-purple-600">
           <UserPlus size={17} />
+        </div>
+      );
+
+    case "UNASSIGNED":
+      return (
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+          <UserMinus size={17} />
         </div>
       );
 
@@ -109,7 +96,66 @@ const ActivityIcon = ({ type }: { type: Activity["type"] }) => {
   }
 };
 
+const ActivityAvatar = ({
+  name,
+  avatar,
+}: {
+  name?: string;
+  avatar?: string;
+}) => {
+  if (!name && !avatar) {
+    return null;
+  }
+
+  return avatar ? (
+    <img
+      src={avatar}
+      alt={name ?? "User"}
+      title={name}
+      className="h-7 w-7 rounded-full object-cover"
+    />
+  ) : (
+    <span
+      title={name}
+      className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700"
+    >
+      {name?.charAt(0).toUpperCase()}
+    </span>
+  );
+};
+
 const Activities: React.FC = () => {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState<string | null>(null);
+
+  //Fetch all activities
+  useEffect(() => {
+    const fetchActivities = async () => {
+      if (!workspaceId) {
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        const response = await axiosIns.get<Activity[]>(
+          `/api/task/activity/workspace/${workspaceId}`,
+        );
+
+        setActivities(response.data);
+      } catch (err) {
+        console.error("Failed to fetch activities", err);
+        setError("Failed to load activities.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
+  }, [workspaceId]);
   return (
     <div className="min-h-full bg-gray-50 px-6 py-8">
       <div className="mx-auto max-w-4xl">
@@ -139,45 +185,71 @@ const Activities: React.FC = () => {
           </div>
 
           <div className="divide-y divide-gray-100">
-            {activities.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex gap-4 px-6 py-5 transition hover:bg-gray-50"
-              >
-                {/* Icon */}
-                <div className="shrink-0">
-                  <ActivityIcon type={activity.type} />
-                </div>
-
-                {/* Content */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-4">
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold text-gray-900">
-                        {activity.userName}
-                      </span>{" "}
-                      {activity.action}{" "}
-                      <span className="font-medium text-gray-900">
-                        "{activity.target}"
-                      </span>
-                    </p>
-
-                    <span className="shrink-0 text-xs text-gray-400">
-                      {activity.createdAt}
-                    </span>
+            {loading ? (
+              <p className="px-6 py-10 text-center text-sm text-gray-500">
+                Loading activities...
+              </p>
+            ) : error ? (
+              <p className="px-6 py-10 text-center text-sm text-red-500">
+                {error}
+              </p>
+            ) : (
+              activities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex gap-4 px-6 py-5 transition hover:bg-gray-50"
+                >
+                  {/* Icon */}
+                  <div className="shrink-0">
+                    <ActivityIcon action={activity.action} />
                   </div>
 
-                  <p className="mt-1 text-xs text-gray-400">
-                    {activity.boardName}
-                  </p>
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-4">
+                      <p className="text-sm text-gray-700">
+                        <span className="inline-flex items-center gap-2 align-middle">
+                          <ActivityAvatar
+                            name={activity.userName}
+                            avatar={activity.userAvatar}
+                          />
+                          <span className="font-semibold text-gray-900">
+                            {activity.userName}
+                          </span>
+                        </span>{" "}
+                        <span className="font-medium text-gray-900">
+                          {activity.message}
+                        </span>
+                        {(activity.action === "ASSIGNED" ||
+                          activity.action === "UNASSIGNED") &&
+                          (activity.assignedToName ||
+                            activity.assignedToAvatar) && (
+                            <span className="ml-2 inline-flex align-middle">
+                              <ActivityAvatar
+                                name={activity.assignedToName}
+                                avatar={activity.assignedToAvatar}
+                              />
+                            </span>
+                          )}
+                      </p>
+
+                      <span className="shrink-0 text-xs text-gray-400">
+                        {activity.createdAt}
+                      </span>
+                    </div>
+
+                    <p className="mt-1 text-xs text-gray-400">
+                      {activity.boardName}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
         {/* Empty state */}
-        {activities.length === 0 && (
+        {!loading && !error && activities.length === 0 && (
           <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center shadow-sm">
             <Clock3 size={32} className="mx-auto text-gray-300" />
 

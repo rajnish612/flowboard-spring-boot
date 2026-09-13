@@ -37,7 +37,7 @@ public class CardService {
     // Fetch all cards for a list, already ordered by position
     public List<CardDTO> getCardsByListId(Long listId) {
         List<Card> cards = cardRepo.findByListIdOrderByPositionAsc(listId);
-//
+        //
         List<Long> userIds = cards.stream()
                 .map(Card::getAssignedTo)
                 .filter(Objects::nonNull)
@@ -47,16 +47,14 @@ public class CardService {
                 .stream()
                 .collect(Collectors.toMap(
                         UserDTO::getId,
-                        Function.identity()
-                ));
+                        Function.identity()));
         return cards.stream()
                 .map(card -> {
 
                     CardDTO dto = toDTO(card);
 
                     if (card.getAssignedTo() != null) {
-                        UserDTO profile =
-                                profiles.get(card.getAssignedTo());
+                        UserDTO profile = profiles.get(card.getAssignedTo());
 
                         if (profile != null) {
                             dto.setAssignedToAvatar(profile.getAvatar());
@@ -84,9 +82,9 @@ public class CardService {
                 .assignedTo(dto.getAssignedTo())
                 .dueDate(dto.getDueDate())
                 .build();
-        BoardList list = boardListRepo.findById(card.getListId()).orElseThrow(() -> new EntityNotFoundException("List not found"));
-        WorkspaceDTO workspace =
-                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+        BoardList list = boardListRepo.findById(card.getListId())
+                .orElseThrow(() -> new EntityNotFoundException("List not found"));
+        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
         Card saved = cardRepo.save(card);
 
         activityService.createActivity(
@@ -97,9 +95,9 @@ public class CardService {
                 saved.getId(),
                 ActivityType.CARD_CREATED,
                 "Card created \"" + saved.getTitle() + "\"",
-                null
-        );
-        log.info("Created card '{}' at position {} in list {}", saved.getTitle(), saved.getPosition(), saved.getListId());
+                null);
+        log.info("Created card '{}' at position {} in list {}", saved.getTitle(), saved.getPosition(),
+                saved.getListId());
         return toDTO(saved);
     }
 
@@ -120,47 +118,48 @@ public class CardService {
         Long oldAssignedTo = card.getAssignedTo();
 
         card.setAssignedTo(dto.getAssignedTo());
-        log.info("assigned to = {}", dto.getAssignedTo());
         if (dto.getPosition() != null) {
             card.setPosition(dto.getPosition());
         }
 
-        BoardList list = boardListRepo.findById(card.getListId()).orElseThrow(() -> new EntityNotFoundException("List not found"));
-        WorkspaceDTO workspace =
-                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+        BoardList list = boardListRepo.findById(card.getListId())
+                .orElseThrow(() -> new EntityNotFoundException("List not found"));
+        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
 
         Card updated = cardRepo.save(card);
 
         if (!Objects.equals(oldAssignedTo, updated.getAssignedTo())) {
 
-            String message;
-
             if (updated.getAssignedTo() == null) {
-
-                message = "unassigned card \"" + updated.getTitle() + "\"";
+                UserDTO unassignedUser = authClient.getProfile(oldAssignedTo);
+                activityService.createActivity(
+                        userId,
+                        workspace.getId(),
+                        list.getBoardId(),
+                        list.getId(),
+                        updated.getId(),
+                        ActivityType.CARD_UNASSIGNED,
+                        "unassigned card \"" + updated.getTitle() + "\" from " + unassignedUser.getName(),
+                        oldAssignedTo);
 
             } else {
 
-                UserDTO assignedUser =
-                        authClient.getProfile(updated.getAssignedTo());
+                UserDTO assignedUser = authClient.getProfile(updated.getAssignedTo());
 
-                message = "assigned card \"" +
-                        updated.getTitle() +
-                        "\" to " +
-                        assignedUser.getName();
+                activityService.createActivity(
+                        userId,
+                        workspace.getId(),
+                        list.getBoardId(),
+                        list.getId(),
+                        updated.getId(),
+                        ActivityType.CARD_ASSIGNED,
+                        "assigned card \"" +
+                                updated.getTitle() +
+                                "\" to " +
+                                assignedUser.getName(),
+                        updated.getAssignedTo());
             }
 
-            activityService.createActivity(
-                    userId,
-                    workspace.getId(),
-                    list.getBoardId(),
-                    list.getId(),
-                    updated.getId(),
-                    ActivityType.CARD_ASSIGNED,
-                    message,
-                    updated.getAssignedTo()
-
-            );
         } else {
             activityService.createActivity(
                     userId,
@@ -170,8 +169,7 @@ public class CardService {
                     updated.getId(),
                     ActivityType.CARD_UPDATED,
                     "Updated card \"" + updated.getTitle() + "\"",
-                    null
-            );
+                    null);
         }
         log.info("Updated card id = {}", id);
         return toDTO(updated);
@@ -180,13 +178,11 @@ public class CardService {
     // Delete a card by id
     public void deleteCard(Long id, Long userId) {
         Card card = cardRepo.findById(id)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Card not found: " + id)
-                );
+                .orElseThrow(() -> new EntityNotFoundException("Card not found: " + id));
 
-        BoardList list = boardListRepo.findById(card.getListId()).orElseThrow(() -> new EntityNotFoundException("List not found"));
-        WorkspaceDTO workspace =
-                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+        BoardList list = boardListRepo.findById(card.getListId())
+                .orElseThrow(() -> new EntityNotFoundException("List not found"));
+        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
         activityService.createActivity(
                 userId,
                 workspace.getId(),
@@ -195,14 +191,14 @@ public class CardService {
                 id,
                 ActivityType.CARD_DELETED,
                 "Card deleted \"" + card.getTitle() + "\"",
-                null
-        );
+                null);
 
         cardRepo.deleteById(id);
         log.info("Deleted card id={}", id);
     }
 
-    // Move a card to a target list at a specific position, reordering both source and target lists
+    // Move a card to a target list at a specific position, reordering both source
+    // and target lists
     @Transactional
     public CardDTO moveCard(Long cardId, Long targetListId, int newPosition, Long userId) {
         Card card = cardRepo.findById(cardId)
@@ -211,19 +207,18 @@ public class CardService {
         Long sourceListId = card.getListId();
         int oldPosition = card.getPosition();
         BoardList targetList = boardListRepo.findById(targetListId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException("Target list not found: " + targetListId)
-                );
-        BoardList sourceList = boardListRepo.findById(sourceListId).orElseThrow(() ->
-                new EntityNotFoundException("Source list not found: " + sourceListId)
-        );
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Target list not found: " + targetListId));
+        BoardList sourceList = boardListRepo.findById(sourceListId).orElseThrow(
+                () -> new EntityNotFoundException("Source list not found: " + sourceListId));
         boolean isSameList = sourceListId.equals(targetListId);
 
         if (isSameList) {
             // Reorder within the same list
             List<Card> siblings = cardRepo.findByListIdOrderByPositionAsc(sourceListId);
             for (Card sibling : siblings) {
-                if (sibling.getId().equals(cardId)) continue;
+                if (sibling.getId().equals(cardId))
+                    continue;
                 int pos = sibling.getPosition();
                 if (oldPosition < newPosition && pos > oldPosition && pos <= newPosition) {
                     sibling.setPosition(pos - 1);
@@ -238,7 +233,8 @@ public class CardService {
             // 1. Collapse gap in the source list
             List<Card> sourceCards = cardRepo.findByListIdOrderByPositionAsc(sourceListId);
             for (Card sibling : sourceCards) {
-                if (sibling.getId().equals(cardId)) continue;
+                if (sibling.getId().equals(cardId))
+                    continue;
                 if (sibling.getPosition() > oldPosition) {
                     sibling.setPosition(sibling.getPosition() - 1);
                     cardRepo.save(sibling);
@@ -260,9 +256,7 @@ public class CardService {
 
         card.setPosition(newPosition);
 
-
         Card moved = cardRepo.save(card);
-
 
         String message;
 
@@ -280,8 +274,7 @@ public class CardService {
                     + targetList.getName()
                     + "\"";
         }
-        WorkspaceDTO workspace =
-                workspaceClient.getWorkspaceByBoardId(targetList.getBoardId());
+        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(targetList.getBoardId());
         activityService.createActivity(
                 userId,
                 workspace.getId(),
@@ -290,8 +283,7 @@ public class CardService {
                 moved.getId(),
                 ActivityType.CARD_MOVED,
                 message,
-                null
-        );
+                null);
         log.info("Moved card id={} to list {} at position {}", cardId, targetListId, newPosition);
         return toDTO(moved);
     }
