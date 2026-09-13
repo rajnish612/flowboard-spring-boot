@@ -130,7 +130,6 @@ public class WorkspaceService {
         List<WorkspaceMembers> members = workspaceMemberRepo
                 .findByWorkspaceId(workspaceId)
                 .stream()
-                .filter(member -> !member.getUserId().equals(userId))
                 .toList();
 
         if (members.isEmpty()) {
@@ -186,6 +185,26 @@ public class WorkspaceService {
 
         return user;
     }
+
+        // Remove a member from a workspace. Only the workspace owner can do this.
+        public void removeMember(Long workspaceId, Long memberUserId, Long userId) {
+                Workspace workspace = workSpaceRepo.findById(workspaceId)
+                                .orElseThrow(() -> new RuntimeException("Workspace not found"));
+
+                if (!workspace.getOwnerId().equals(userId)) {
+                        throw new RuntimeException("You are not the owner of this workspace");
+                }
+
+                if (workspace.getOwnerId().equals(memberUserId)) {
+                        throw new RuntimeException("The workspace owner cannot be removed");
+                }
+
+                WorkspaceMembers member = workspaceMemberRepo
+                                .findByWorkspaceIdAndUserId(workspaceId, memberUserId)
+                                .orElseThrow(() -> new RuntimeException("Member not found in this workspace"));
+
+                workspaceMemberRepo.delete(member);
+        }
 
 
     //Method to update workspace
