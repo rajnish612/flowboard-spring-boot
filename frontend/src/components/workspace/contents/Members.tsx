@@ -2,12 +2,15 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router";
 import { axiosIns } from "../../../utils/axiosInstance";
+import { useAuth } from "../../../hooks/UseAuth";
+import { useWorkspaceContext } from "../../../hooks/useOutletContext";
 type Member = {
   id: number;
   userId: number;
   name: string;
   email: string;
   avatar?: string | null;
+  role?: "OWNER" | "MEMBER";
 };
 type User = {
   id: number;
@@ -22,7 +25,11 @@ const Members: React.FC = () => {
   const [email, setEmail] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [removingMemberId, setRemovingMemberId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { workspace } = useWorkspaceContext();
+  const canManageMembers = Boolean(user?.id && workspace?.ownerId === user.id);
   // Fetch members of the selected workspace.
   useEffect(() => {
     if (!workspaceId) return;
@@ -53,7 +60,7 @@ const Members: React.FC = () => {
         workspaceId: Number(workspaceId),
         email: trimmedEmail,
       });
-      setMembers((prev) => [...prev, res.data]);
+      setMembers((prev) => [...prev, { ...res.data }]);
       setEmail("");
       setShowAddMember(false);
     } catch (err: unknown) {
@@ -70,14 +77,47 @@ const Members: React.FC = () => {
     }
   };
 
+//Remove member from the workspace
+  const removeMember = async (member: Member) => {
+    if (!workspaceId || !canManageMembers || member.role === "OWNER") return;
+
+    const confirmed = window.confirm(
+      `Remove ${member.name} from this workspace?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setRemovingMemberId(member.userId);
+      await axiosIns.delete(
+        `/api/workspace/member/${workspaceId}/${member.userId}`,
+      );
+      setMembers((prev) =>
+        prev.filter((currentMember) => currentMember.userId !== member.userId),
+      );
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        console.error(
+          "Unable to remove member:",
+          err.response?.data?.message ?? err.message,
+        );
+      } else {
+        console.error("Unable to remove member:", err);
+      }
+    } finally {
+      setRemovingMemberId(null);
+    }
+  };
+
   //Search users using email
-  const handleSearch = async (e) => {
+  const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
     if (!e.target.value) return;
     try {
       const res = await axiosIns.get(`/api/auth/user/search/${e.target.value}`);
       setSearchResults(res.data);
-    } catch (err) {}
+    } catch (err) {
+      console.error("Unable to search users:", err);
+    }
   };
   return (
     <div className="max-w-4xl">
@@ -96,29 +136,31 @@ const Members: React.FC = () => {
             People who have access to this workspace.{" "}
           </p>{" "}
         </div>{" "}
-        <button
-          type="button"
-          onClick={() => setShowAddMember(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition"
-        >
-          {" "}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        {canManageMembers && (
+          <button
+            type="button"
+            onClick={() => setShowAddMember(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition"
           >
             {" "}
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />{" "}
-          </svg>{" "}
-          Add member{" "}
-        </button>{" "}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              {" "}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />{" "}
+            </svg>{" "}
+            Add member{" "}
+          </button>
+        )}{" "}
       </div>{" "}
       {/* Members list */}{" "}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
@@ -159,7 +201,7 @@ const Members: React.FC = () => {
                       className="w-11 h-11 shrink-0 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
+                    <div className="w-11 h-11 shrink-0 rounded-full bg-linear-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white font-semibold">
                       {" "}
                       {member.name.charAt(0).toUpperCase()}{" "}
                     </div>
@@ -177,11 +219,30 @@ const Members: React.FC = () => {
                     </p>{" "}
                   </div>{" "}
                 </div>{" "}
-                {/* Member label */}{" "}
-                <span className="ml-4 shrink-0 px-3 py-1 rounded-full bg-gray-100 text-xs font-medium text-gray-600">
-                  {" "}
-                  Member{" "}
-                </span>{" "}
+                {/* Member role */}{" "}
+                <div className="ml-4 flex shrink-0 items-center gap-3">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      member.role === "OWNER"
+                        ? "bg-indigo-100 text-indigo-700"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {member.role === "OWNER" ? "Owner" : "Member"}
+                  </span>
+                  {canManageMembers && member.role !== "OWNER" && (
+                    <button
+                      type="button"
+                      onClick={() => removeMember(member)}
+                      disabled={removingMemberId === member.userId}
+                      className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {removingMemberId === member.userId
+                        ? "Removing..."
+                        : "Remove"}
+                    </button>
+                  )}
+                </div>{" "}
               </div>
             ))}{" "}
           </div>
@@ -275,7 +336,7 @@ const Members: React.FC = () => {
                       className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition"
                     >
                       <img
-                        src={user?.avatar}
+                        src={user.avatar ?? undefined}
                         alt={user.name}
                         className="h-9 w-9 rounded-full object-cover"
                       />
