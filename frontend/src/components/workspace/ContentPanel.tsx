@@ -47,7 +47,7 @@ const ContentPanel: React.FC = () => {
   // ── No workspace selected ────────────────────────────────────────────────
   if (!workspaceId) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 min-h-screen gap-6 px-8 relative">
+      <div className="relative flex min-h-screen flex-1 flex-col items-center justify-center gap-6 bg-slate-50 px-8">
         {/* Floating user profile */}
         {user && (
           <div className="absolute top-5 right-8 z-10">
@@ -60,7 +60,7 @@ const ContentPanel: React.FC = () => {
                     className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center font-semibold">
+                  <div className="w-10 h-10 rounded-full bg-linear-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center font-semibold">
                     {user.name?.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -86,7 +86,7 @@ const ContentPanel: React.FC = () => {
               </button>
               <div className="absolute right-0 top-14 w-72 opacity-0 invisible translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-300">
                 <div className="rounded-2xl bg-white border border-gray-200 shadow-2xl overflow-hidden">
-                  <div className="px-5 py-5 bg-gradient-to-br from-violet-600 to-indigo-600">
+                  <div className="px-5 py-5 bg-linear-to-br from-violet-600 to-indigo-600">
                     <div className="flex items-center gap-4">
                       {user.avatar ? (
                         <img
@@ -151,7 +151,7 @@ const ContentPanel: React.FC = () => {
         )}
 
         {/* Illustration */}
-        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center shadow-inner">
+        <div className="w-24 h-24 rounded-3xl bg-linear-to-br from-violet-100 to-indigo-100 flex items-center justify-center shadow-inner">
           <svg
             className="w-12 h-12 text-violet-400"
             fill="none"
@@ -187,18 +187,18 @@ const ContentPanel: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50 min-h-screen overflow-y-auto relative">
+    <div className="relative flex h-screen min-h-0 min-w-0 flex-1 flex-col bg-slate-50">
       {/* Workspace Header */}
-      <div className="flex items-center gap-4 px-8 py-6 border-b border-violet-400 bg-gradient-to-r from-violet-600 to-indigo-600 shadow-md">
-        <div className="h-14 w-14 rounded-xl bg-white/20 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 border border-white/30">
+      <div className="flex items-center gap-4 border-b border-slate-200 bg-white px-8 py-6 shadow-sm">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-600 to-violet-600 text-2xl font-bold text-white shadow-lg shadow-indigo-200">
           {workspaceInitial}
         </div>
 
         <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-white">
+          <h1 className="text-xl font-bold tracking-tight text-slate-800">
             {workspace?.name || "Workspace"}
           </h1>
-          <span className="text-xs text-violet-200 mt-0.5">Free Plan</span>
+          <span className="mt-0.5 text-xs font-medium text-slate-400">Free Plan</span>
         </div>
       </div>
 
@@ -215,7 +215,7 @@ const ContentPanel: React.FC = () => {
                   className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center font-semibold">
+                <div className="w-10 h-10 rounded-full bg-linear-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center font-semibold">
                   {user.name?.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -246,7 +246,7 @@ const ContentPanel: React.FC = () => {
             <div className="absolute right-0 top-14 w-72 opacity-0 invisible translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-300">
               <div className="rounded-2xl bg-white border border-gray-200 shadow-2xl overflow-hidden">
                 {/* Profile Header */}
-                <div className="px-5 py-5 bg-gradient-to-br from-violet-600 to-indigo-600">
+                <div className="px-5 py-5 bg-linear-to-br from-violet-600 to-indigo-600">
                   <div className="flex items-center gap-4">
                     {user.avatar ? (
                       <img
@@ -317,10 +317,10 @@ const ContentPanel: React.FC = () => {
       )}
 
       {/* Main Content Area */}
-      <div className="px-8 py-6">
+      <div className="min-h-0 flex-1 overflow-y-auto px-8 py-7">
         {loading ? (
-          <div className="flex justify-center items-center min-h-[200px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600"></div>
+          <div className="flex min-h-50 items-center justify-center">
+            <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-b-indigo-600"></div>
           </div>
         ) : (
           <Outlet
