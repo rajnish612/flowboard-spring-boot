@@ -101,4 +101,16 @@ public class WorkspaceController {
         return ResponseEntity.ok(workspaceService.addMember(addMemberDTO, userId));
     }
 
+    // Endpoint to remove a member from a workspace
+    @DeleteMapping("/member/{workspaceId}/{memberUserId}")
+    public ResponseEntity<String> removeMember(
+            @PathVariable Long workspaceId,
+            @PathVariable Long memberUserId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long userId = jwt.getClaim("userId");
+        workspaceService.removeMember(workspaceId, memberUserId, userId);
+        return ResponseEntity.ok("Member removed");
+    }
+
 }
