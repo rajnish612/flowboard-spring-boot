@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @Table(
         name = "workspace_members",
         uniqueConstraints = @UniqueConstraint(
-                columnNames = {"workspace_id", "REMOVED_id"}
+                columnNames = {"workspace_id", "user_id"}
         )
 )
 public class WorkspaceMembers {
