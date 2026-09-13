@@ -75,7 +75,6 @@ const LeftPanel: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { user } = useAuth();
 
-  
   // function to create new workspace
   const createWorkspace = async () => {
     if (!workspaceName || !user) return;
@@ -94,8 +93,7 @@ const LeftPanel: React.FC = () => {
     if (!id) return;
     setOpenDropdownId((prev) => (prev === id ? null : id));
   };
-  
-  
+
   //Function to load initial workspaces
   React.useEffect(() => {
     const fetchWorkspaces = async () => {
@@ -116,7 +114,7 @@ const LeftPanel: React.FC = () => {
 
   return (
     <>
-      <aside className="w-64 min-w-[16rem] bg-white shadow-lg py-4 flex flex-col">
+      <aside className="flex h-screen w-64 min-w-[16rem] shrink-0 flex-col overflow-hidden bg-white py-4 shadow-lg">
         {/* Header */}
         <div className="flex items-center px-4 mb-4 border-b border-gray-200 pb-4">
           <div className="h-10 w-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white flex-shrink-0">
@@ -130,14 +128,14 @@ const LeftPanel: React.FC = () => {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 7h18M3 12h18M3 17h18"
+                strokeWidth={1.8}
+                d="M4 7.5A2.5 2.5 0 016.5 5h3l1.6 2h6.4A2.5 2.5 0 0120 9.5v7A2.5 2.5 0 0117.5 19h-11A2.5 2.5 0 014 16.5v-9z"
               />
             </svg>
           </div>
           <div className="ml-3 flex flex-col">
             <span className="font-semibold text-gray-800 text-sm">
-              Trello Workspace
+              Flowboard
             </span>
             <span className="text-xs text-gray-400">Free</span>
           </div>
@@ -156,26 +154,28 @@ const LeftPanel: React.FC = () => {
               Workspaces
             </span>
             {/* Plus icon — adds a new workspace */}
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="p-0.5 rounded hover:bg-indigo-100 transition-colors"
-              title="Create workspace"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 text-gray-400 hover:text-indigo-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            {activeView == "mine" && (
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="p-0.5 rounded hover:bg-indigo-100 transition-colors"
+                title="Create workspace"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 text-gray-400 hover:text-indigo-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Workspace list */}
@@ -193,8 +193,13 @@ const LeftPanel: React.FC = () => {
                   >
                     {ws.name.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-sm font-medium text-gray-700 truncate">
-                    {ws.name}
+                  <span className="flex min-w-0 flex-col items-start">
+                    <span className="max-w-40 truncate text-sm font-semibold text-gray-700">
+                      {ws.name}
+                    </span>
+                    <span className="text-[11px] font-medium text-gray-400">
+                      {activeView === "mine" ? "Owner" : "Shared with you"}
+                    </span>
                   </span>
                 </div>
                 {/* Chevron arrow */}
