@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Card } from "../../types/task";
 import { axiosIns } from "../../utils/axiosInstance";
 import { useParams } from "react-router";
+import { useAuth } from "../../hooks/UseAuth";
 const BASE = "/api/task";
 type CardModalProps = {
   card: Card;
@@ -24,6 +25,7 @@ export const CardModal: React.FC<CardModalProps> = ({
   onSave,
   onDelete,
 }) => {
+  const { user } = useAuth();
   const { boardId } = useParams<{ boardId: string }>();
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description ?? "");
@@ -132,11 +134,14 @@ export const CardModal: React.FC<CardModalProps> = ({
               className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
             >
               <option value="">Unassigned</option>
-              {members.map((member) => (
-                <option key={member.userId} value={member.userId}>
-                  {member.name} ({member.email})
-                </option>
-              ))}
+              {members.map(
+                (member) =>
+                  user?.id !== member.userId && (
+                    <option key={member.userId} value={member.userId}>
+                      {member.name} ({member.email})
+                    </option>
+                  ),
+              )}
             </select>
           </div>
         </div>
