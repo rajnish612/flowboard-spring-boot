@@ -8,11 +8,13 @@ import { ProtectedRoute } from "./wrappers/ProtectedRoute";
 import Members from "./components/workspace/contents/Members";
 import Settings from "./components/workspace/contents/Settings";
 import Activities from "./components/workspace/contents/Activities";
+import { ApiErrorProvider } from "./context/ApiErrorContext";
 
 const App = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
+      <ApiErrorProvider>
+        <AuthProvider>
         <Routes>
           {/* Login page route */}
           <Route path="/" element={<Login />} />
@@ -42,7 +44,8 @@ const App = () => {
             }
           />
         </Routes>
-      </AuthProvider>
+        </AuthProvider>
+      </ApiErrorProvider>
     </BrowserRouter>
   );
 };
