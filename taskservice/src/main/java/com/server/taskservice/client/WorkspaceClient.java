@@ -1,11 +1,12 @@
 package com.server.taskservice.client;
 
+import com.server.taskservice.dto.BoardDTO;
 import com.server.taskservice.dto.WorkspaceDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @FeignClient(name = "workspaceservice")
 public interface WorkspaceClient {
@@ -15,6 +16,9 @@ public interface WorkspaceClient {
             @PathVariable("boardId") Long boardId,
             @RequestParam("userId") Long userId
     );
+
+    @PostMapping("/board")
+    public List<BoardDTO> getBoardsByBoardsId(@RequestBody List<Long> boardIds);
 
     @GetMapping("/get/{boardId}")
     public WorkspaceDTO getWorkspaceByBoardId(@PathVariable Long boardId);
