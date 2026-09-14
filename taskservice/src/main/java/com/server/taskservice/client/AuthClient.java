@@ -18,11 +18,15 @@ public interface AuthClient {
     @PostMapping("/users")
     List<UserDTO> getUsersByIds(@RequestBody List<Long> userIds);
 
+    //Get user using email
     @GetMapping("/user/{email}")
     UserDTO getUserByEmail(
             @PathVariable("email") String email
     );
 
+    //fetch profile using userId
     @GetMapping("/profile/{id}")
     UserDTO getProfile(@PathVariable Long id);
+
+
 }

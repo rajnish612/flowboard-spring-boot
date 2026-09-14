@@ -3,6 +3,7 @@ package com.server.taskservice.service;
 import com.server.taskservice.client.AuthClient;
 import com.server.taskservice.client.WorkspaceClient;
 import com.server.taskservice.dto.ActivityDTO;
+import com.server.taskservice.dto.BoardDTO;
 import com.server.taskservice.dto.UserDTO;
 import com.server.taskservice.dto.WorkspaceDTO;
 import com.server.taskservice.model.Activity;
@@ -12,6 +13,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -51,30 +56,55 @@ public class ActivityService {
 
         List<Activity> activities =
                 activityRepo.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
+        if (activities.isEmpty()) {
+            return List.of();
+        }
+        List<Long> boardIds = activities.stream().map(Activity::getBoardId).filter(Objects::nonNull).distinct().toList();
+        List<Long> userIds = activities.stream().map(Activity::getUserId).filter(Objects::nonNull).distinct().toList();
+        List<Long> assignedToIds = activities.stream().map(Activity::getAssignedTo).filter(Objects::nonNull).distinct().toList();
+        List<UserDTO> users = authClient.getUsersByIds(userIds);
+        List<BoardDTO> boards = workspaceClient.getBoardsByBoardsId(boardIds);
+        List<UserDTO> assignedToUsers =
+                assignedToIds.isEmpty()
+                        ? List.of()
+                        : authClient.getUsersByIds(assignedToIds);
+
+        Map<Long, BoardDTO> boardsMapped = boards.stream().collect(Collectors.toMap(BoardDTO::getId, Function.identity()));
+        Map<Long, UserDTO> usersMapped = users.stream()
+                .collect(Collectors.toMap(
+                        UserDTO::getId,
+                        Function.identity()
+                ));
+        Map<Long, UserDTO> assignedToUsersMapped =
+                assignedToUsers.stream()
+                        .collect(Collectors.toMap(
+                                UserDTO::getId,
+                                Function.identity()
+                        ));
 
         return activities.stream()
-                .map(this::toDTO)
+                .map(activity -> toDTO(
+                        activity,
+                        usersMapped,
+                        assignedToUsersMapped,
+                        boardsMapped
+                ))
                 .toList();
     }
 
     //for the purpose of converting Activity object into ActivityDTO object
-    private ActivityDTO toDTO(Activity activity) {
+    private ActivityDTO toDTO(Activity activity, Map<Long, UserDTO> usersMapped,
+                              Map<Long, UserDTO> assignedToUsersMapped, Map<Long, BoardDTO> boardsMapped
+
+    ) {
 
         UserDTO actor =
-                authClient.getProfile(activity.getUserId());
+                usersMapped.get(activity.getUserId());
 
-        UserDTO assignedUser = null;
+        UserDTO assignedUser =
+                assignedToUsersMapped.get(activity.getAssignedTo());
 
-        if (activity.getAssignedTo() != null) {
-            assignedUser =
-                    authClient.getProfile(activity.getAssignedTo());
-        }
-
-        WorkspaceDTO workspace =
-                workspaceClient.getWorkspaceByWorkspaceId(
-                        activity.getWorkspaceId()
-                );
-
+        String boardName = boardsMapped.get(activity.getBoardId()).getName();
         return ActivityDTO.builder()
                 .id(activity.getId())
                 .userId(activity.getUserId())
@@ -95,7 +125,7 @@ public class ActivityService {
                                 : null
                 )
 
-                .boardName(getBoardName(workspace, activity.getBoardId()))
+                .boardName(boardName)
                 .createdAt(activity.getCreatedAt())
                 .type(activity.getType())
                 .build();
@@ -114,13 +144,13 @@ public class ActivityService {
     }
 
 
-    private String getBoardName(
-            WorkspaceDTO workspace,
-            Long boardId
-    ) {
-        // Replace this once Workspace Service exposes board lookup.
-        return "Board " + boardId;
-    }
+//    private String getBoardName(
+//            WorkspaceDTO workspace,
+//            Long boardId
+//    ) {
+//        // Replace this once Workspace Service exposes board lookup.
+//        return "Board " + boardId;
+//    }
 
 
 }
