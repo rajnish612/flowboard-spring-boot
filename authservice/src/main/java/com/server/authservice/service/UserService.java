@@ -4,9 +4,9 @@ package com.server.authservice.service;
 import com.server.authservice.dto.ProfileDTO;
 import com.server.authservice.model.User;
 import com.server.authservice.repository.UserRepo;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,7 +28,7 @@ public class UserService {
                         .email(u.getEmail())
                         .avatar(u.getAvatar())
                         .build())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + id));
     }
 
     //Method to get users by user Ids
@@ -50,7 +50,7 @@ public class UserService {
     //Method to get user by email
     public ProfileDTO getUserByEmail(String email) {
         User user = userRepo.findByEmail(email).orElseThrow(() ->
-                new UsernameNotFoundException("User not found"));
+            new EntityNotFoundException("User not found with email: " + email));
 
         return ProfileDTO.builder()
                 .id(user.getId())

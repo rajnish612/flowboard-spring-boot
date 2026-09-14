@@ -86,7 +86,7 @@ public class BoardService {
 
         Board board = boardRepo.findById(boardId)
                 .orElseThrow(() ->
-                        new RuntimeException("Board not found"));
+                        new EntityNotFoundException("Board not found: " + boardId));
 
         Long workspaceId = board.getWorkspaceId();
 

@@ -6,6 +6,7 @@ import com.server.workspaceservice.model.Board;
 import com.server.workspaceservice.service.BoardService;
 import com.server.workspaceservice.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -58,7 +59,7 @@ public class BoardController {
 
     //    Endpoint to create board
     @PostMapping("/create")
-    public ResponseEntity<BoardDTO> createBoard(@AuthenticationPrincipal Jwt jwt, @RequestBody BoardDTO boardDTO) {
+    public ResponseEntity<BoardDTO> createBoard(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody BoardDTO boardDTO) {
         Long userId = jwt.getClaim("userId");
         BoardDTO boardDTO1 = boardService.createBoard(boardDTO, userId);
         return new ResponseEntity<>(boardDTO1, HttpStatus.CREATED);

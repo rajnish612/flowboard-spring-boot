@@ -9,9 +9,11 @@ import com.server.workspaceservice.model.WorkspaceRole;
 import com.server.workspaceservice.repository.BoardRepo;
 import com.server.workspaceservice.repository.WorkSpaceRepo;
 import com.server.workspaceservice.repository.WorkspaceMemberRepo;
+import com.server.workspaceservice.exception.BusinessRuleException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -57,7 +59,7 @@ public class WorkspaceService {
     public void deleteWorkspace(Long id, Long userId) {
         boolean hasAccess = workSpaceRepo.checkIsOwner(userId, id);
         if (!hasAccess) {
-            throw new RuntimeException("You are not the owner of this workspace");
+                        throw new AccessDeniedException("You are not the owner of this workspace");
         }
         workSpaceRepo.deleteById(id);
     }
@@ -170,7 +172,7 @@ public class WorkspaceService {
     public UserDTO addMember(AddMemberDTO addMemberDTO, Long userId) {
         boolean hasAccess = workSpaceRepo.checkIsOwner(userId, addMemberDTO.getWorkspaceId());
         if (!hasAccess) {
-            throw new RuntimeException("You are not the owner of this workspace");
+                        throw new AccessDeniedException("You are not the owner of this workspace");
         }
 
         UserDTO user = authClient.getUserByEmail(addMemberDTO.getEmail());
@@ -189,19 +191,19 @@ public class WorkspaceService {
         // Remove a member from a workspace. Only the workspace owner can do this.
         public void removeMember(Long workspaceId, Long memberUserId, Long userId) {
                 Workspace workspace = workSpaceRepo.findById(workspaceId)
-                                .orElseThrow(() -> new RuntimeException("Workspace not found"));
+                                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
 
                 if (!workspace.getOwnerId().equals(userId)) {
-                        throw new RuntimeException("You are not the owner of this workspace");
+                        throw new AccessDeniedException("You are not the owner of this workspace");
                 }
 
                 if (workspace.getOwnerId().equals(memberUserId)) {
-                        throw new RuntimeException("The workspace owner cannot be removed");
+                        throw new BusinessRuleException("The workspace owner cannot be removed");
                 }
 
                 WorkspaceMembers member = workspaceMemberRepo
                                 .findByWorkspaceIdAndUserId(workspaceId, memberUserId)
-                                .orElseThrow(() -> new RuntimeException("Member not found in this workspace"));
+                                .orElseThrow(() -> new EntityNotFoundException("Member not found in this workspace"));
 
                 workspaceMemberRepo.delete(member);
         }
@@ -210,9 +212,9 @@ public class WorkspaceService {
     //Method to update workspace
     public void updateWorkspace(Long workspaceId, WorkspaceDTO workspaceDTO, Long userId) {
         Workspace workspace = workSpaceRepo.findById(workspaceId)
-                .orElseThrow(() -> new RuntimeException("Workspace not found"));
+                                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
         if (!workspace.getOwnerId().equals(userId)) {
-            throw new RuntimeException("You are not the owner of this workspace");
+                        throw new AccessDeniedException("You are not the owner of this workspace");
         }
 
         workspace.setName(workspaceDTO.getName());

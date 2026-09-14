@@ -6,6 +6,7 @@ import com.server.authservice.repository.UserRepo;
 import com.server.authservice.service.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -49,7 +50,7 @@ public class AuthController {
 
     //Endpoint to get multiple users through userIds
     @PostMapping("/users")
-    public ResponseEntity<List<ProfileDTO>> getUsers(@RequestBody List<Long> userIds) {
+    public ResponseEntity<List<ProfileDTO>> getUsers(@Valid @RequestBody List<Long> userIds) {
 
         return ResponseEntity.ok(
                 userService.getUsersByIds(userIds)

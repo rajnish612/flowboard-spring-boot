@@ -1,6 +1,7 @@
 package com.server.taskservice.controller;
 
 import com.server.taskservice.dto.CardDTO;
+import com.server.taskservice.dto.MoveCardRequest;
 import com.server.taskservice.service.CardService;
 import com.server.taskservice.websocket.BoardEventPublisher;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,7 +39,7 @@ public class CardController {
 
     // POST /card/create — create a new card
     @PostMapping("/create/{boardId}")
-    public ResponseEntity<CardDTO> createCard(@PathVariable Long boardId, @RequestBody CardDTO dto, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<CardDTO> createCard(@PathVariable Long boardId, @Valid @RequestBody CardDTO dto, @AuthenticationPrincipal Jwt jwt) {
         Long userId = jwt.getClaim("userId");
         CardDTO created = cardService.createCard(dto, userId);
 
@@ -50,7 +52,7 @@ public class CardController {
             "@taskAuthorization.hasCardAccess(#id, authentication)"
     )
     @PutMapping("/{id}/{boardId}")
-    public ResponseEntity<CardDTO> updateCard(@PathVariable Long id, @PathVariable Long boardId, @RequestBody CardDTO dto, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<CardDTO> updateCard(@PathVariable Long id, @PathVariable Long boardId, @Valid @RequestBody CardDTO dto, @AuthenticationPrincipal Jwt jwt) {
         Long userId = jwt.getClaim("userId");
 
         CardDTO updated = cardService.updateCard(id, dto, userId);
@@ -77,21 +79,10 @@ public class CardController {
     public ResponseEntity<CardDTO> moveCard(
             @PathVariable Long id,
             @PathVariable Long boardId,
-            @RequestBody Map<String, Object> body, @AuthenticationPrincipal Jwt jwt) {
-
-        Long targetListId = body.containsKey("targetListId")
-                ? Long.valueOf(body.get("targetListId").toString())
-                : null;
-        Integer position = body.containsKey("position")
-                ? Integer.valueOf(body.get("position").toString())
-                : null;
-
-        if (targetListId == null || position == null) {
-            return ResponseEntity.badRequest().build();
-        }
+                @Valid @RequestBody MoveCardRequest request, @AuthenticationPrincipal Jwt jwt) {
         Long userId = jwt.getClaim("userId");
 
-        CardDTO moved = cardService.moveCard(id, targetListId, position, userId);
+        CardDTO moved = cardService.moveCard(id, request.targetListId(), request.position(), userId);
         boardEventPublisher.publish(userId, "CARD_MOVED", boardId, moved);
         return ResponseEntity.ok(moved);
     }

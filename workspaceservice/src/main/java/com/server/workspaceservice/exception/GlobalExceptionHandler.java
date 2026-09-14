@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -28,12 +30,22 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "You are not authorized to perform this action", request);
     }
 
+    @ExceptionHandler(BusinessRuleException.class)
+    ResponseEntity<ErrorResponse> handleBusinessRule(BusinessRuleException exception, HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, "BUSINESS_RULE_VIOLATION", exception.getMessage(), request);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException exception, HttpServletRequest request) {
         String message = exception.getBindingResult().getFieldErrors().stream()
                 .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
                 .collect(Collectors.joining(", "));
         return error(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", message, request);
+    }
+
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    ResponseEntity<ErrorResponse> handleMalformedRequest(HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "MALFORMED_REQUEST", "The request contains invalid data", request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
