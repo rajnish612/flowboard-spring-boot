@@ -35,7 +35,6 @@ public class BoardController {
     }
 
 
-
     //Endpoint to fetch board using boardId
     @GetMapping("/detail/{boardId}")
     public ResponseEntity<BoardDTO> getBoardById(
@@ -65,5 +64,12 @@ public class BoardController {
         return new ResponseEntity<>(boardDTO1, HttpStatus.CREATED);
 
     }
+
+    //Endpoint to fetch boards using boardIds
+    @PostMapping
+    public ResponseEntity<List<BoardDTO>> getBoardsByBoardsId(@RequestBody List<Long> boardIds) {
+        return ResponseEntity.ok(boardService.getBoardsByIds(boardIds));
+    }
+
 
 }

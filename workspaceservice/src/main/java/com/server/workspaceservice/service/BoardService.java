@@ -57,6 +57,11 @@ public class BoardService {
                 .build();
     }
 
+    //Method to fetch board using board id
+    public List<BoardDTO> getBoardsByIds(List<Long> boardIds) {
+        return boardRepo.findAllById(boardIds).stream().map(board -> BoardDTO.builder().name(board.getName()).description(board.getDescription()).backgroundImage(board.getBackgroundImage()).workspaceId(board.getWorkspaceId()).id(board.getId()).createdAt(board.getCreatedAt()).build()).toList();
+    }
+
     //Method to create new board
     public BoardDTO createBoard(BoardDTO boardDTO, Long userId) {
         boolean isOwner = workSpaceRepo.checkIsOwner(
