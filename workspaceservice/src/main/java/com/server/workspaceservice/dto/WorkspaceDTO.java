@@ -1,6 +1,7 @@
 package com.server.workspaceservice.dto;
 
-import jakarta.persistence.Column;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,8 +18,10 @@ import java.time.LocalDateTime;
 public class WorkspaceDTO {
     private Long id;
 
+    @Size(min = 1, max = 100, message = "name must be between 1 and 100 characters")
     private String name;
 
+    @Positive(message = "ownerId must be positive")
     private Long ownerId;
 
     private LocalDateTime createdAt;

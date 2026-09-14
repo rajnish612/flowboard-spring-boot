@@ -4,6 +4,7 @@ import com.server.taskservice.dto.BoardListDTO;
 import com.server.taskservice.service.BoardListService;
 import com.server.taskservice.websocket.BoardEventPublisher;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,7 +41,7 @@ public class BoardListController {
             "@taskAuthorization.hasBoardAccess(#dto.boardId, authentication)"
     )
     @PostMapping("/create")
-    public ResponseEntity<BoardListDTO> createList(@RequestBody BoardListDTO dto, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<BoardListDTO> createList(@Valid @RequestBody BoardListDTO dto, @AuthenticationPrincipal Jwt jwt) {
         Long userId = jwt.getClaim("userId");
         BoardListDTO created = boardListService.createList(dto, userId);
 
@@ -53,7 +54,7 @@ public class BoardListController {
             "@taskAuthorization.hasListAccess(#id, authentication)"
     )
     @PutMapping("/{id}")
-    public ResponseEntity<BoardListDTO> updateList(@PathVariable Long id, @RequestBody BoardListDTO dto, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<BoardListDTO> updateList(@PathVariable Long id, @Valid @RequestBody BoardListDTO dto, @AuthenticationPrincipal Jwt jwt) {
         Long userId = jwt.getClaim("userId");
 
         BoardListDTO updated = boardListService.updateList(id, dto, userId);

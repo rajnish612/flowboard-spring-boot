@@ -3,6 +3,7 @@ package com.server.workspaceservice.controller;
 import com.server.workspaceservice.dto.*;
 import com.server.workspaceservice.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -46,7 +47,7 @@ public class WorkspaceController {
 
     //Endpoint to update workspace using workspace id
     @PutMapping("/{workspaceId}")
-    public ResponseEntity<String> updateWorkspace(@PathVariable Long workspaceId, @RequestBody WorkspaceDTO workspaceDTO, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<String> updateWorkspace(@PathVariable Long workspaceId, @Valid @RequestBody WorkspaceDTO workspaceDTO, @AuthenticationPrincipal Jwt jwt) {
         Long userId = jwt.getClaim("userId");
         workspaceService.updateWorkspace(workspaceId, workspaceDTO, userId);
         return ResponseEntity.ok("updated");
@@ -54,7 +55,7 @@ public class WorkspaceController {
 
     //End point to create a workspace
     @PostMapping("create")
-    public ResponseEntity<WorkspaceDTO> createWorkspace(@RequestBody WorkspaceDTO workspace, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<WorkspaceDTO> createWorkspace(@Valid @RequestBody WorkspaceDTO workspace, @AuthenticationPrincipal Jwt jwt) {
 
         Long userId = jwt.getClaim("userId");
         WorkspaceDTO newWorkspace = workspaceService.createWorkspace(workspace, userId);
@@ -96,7 +97,7 @@ public class WorkspaceController {
 
     //Endpoint to add member to the workspace
     @PostMapping("/member")
-    public ResponseEntity<UserDTO> addMember(@RequestBody AddMemberDTO addMemberDTO, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<UserDTO> addMember(@Valid @RequestBody AddMemberDTO addMemberDTO, @AuthenticationPrincipal Jwt jwt) {
         Long userId = jwt.getClaim("userId");
         return ResponseEntity.ok(workspaceService.addMember(addMemberDTO, userId));
     }
