@@ -1,0 +1,3 @@
+CREATE DATABASE users;
+CREATE DATABASE workspace_service;
+CREATE DATABASE task_db;
