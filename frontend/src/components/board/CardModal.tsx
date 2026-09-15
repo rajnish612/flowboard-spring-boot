@@ -36,10 +36,12 @@ export const CardModal: React.FC<CardModalProps> = ({
     card.assignedTo ? String(card.assignedTo) : "",
   );
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   //Save card details
   const handleSave = async () => {
     setSaving(true);
+    setError(null);
     try {
       const res = await axiosIns.put<Card>(
         `${BASE}/card/${card.id}/${boardId}`,
@@ -52,8 +54,8 @@ export const CardModal: React.FC<CardModalProps> = ({
       );
 
       onSave(res.data);
-    } catch (err) {
-      console.log("err in updating card: ", err.response.data.message);
+    } catch {
+      setError("Failed to save card. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -148,6 +150,7 @@ export const CardModal: React.FC<CardModalProps> = ({
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4">
+          {error && <p className="mr-4 text-sm text-red-600">{error}</p>}
           <button
             onClick={() => onDelete(card.id)}
             className="text-sm font-medium text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors"

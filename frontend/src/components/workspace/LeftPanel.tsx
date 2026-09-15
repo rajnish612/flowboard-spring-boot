@@ -85,8 +85,8 @@ const LeftPanel: React.FC = () => {
     try {
       const res = await axiosIns.post("/api/workspace/create", newWorkspace);
       setWorkspaces((prev) => [...prev, res.data]);
-    } catch (err) {
-      console.log("unable to create workspace", err.response.data.message);
+    } catch {
+      // The interceptor displays the request error to the user.
     }
   };
   const toggleDropdown = (id?: number) => {
@@ -103,8 +103,8 @@ const LeftPanel: React.FC = () => {
       try {
         const res = await axiosIns.get(fetchWorkspacesApi);
         setWorkspaces(res.data);
-      } catch (err) {
-        console.log("Unable to ferch workspaces", err.response.data.message);
+      } catch {
+        // The interceptor displays the request error to the user.
       } finally {
         setFetchingWorkspaces(false);
       }
