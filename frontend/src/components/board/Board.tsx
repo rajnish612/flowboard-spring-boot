@@ -227,7 +227,6 @@ type Member = {
 };
 const Board: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
-  const [workspaceId, setWorkspaceId] = useState<number | null>(null);
   const { user } = useAuth();
   const numericBoardId = Number(boardId);
   const [boardBackground, setBoardBackground] = React.useState<string>("");
@@ -288,36 +287,46 @@ const Board: React.FC = () => {
   // ── List actions ────────────────────────────────────────────────────────────
   const handleAddList = useCallback(
     async (name: string) => {
-      const res = await axiosIns.post<BoardList>(`${BASE}/list/create`, {
-        boardId: numericBoardId,
-        name,
-      });
-      const newList = res.data;
-      // const newList = await api.createList(numericBoardId, name);
-      setLists((prev) => [...prev, newList]);
-      setCards((prev) => ({ ...prev, [newList.id]: [] }));
+      try {
+        const res = await axiosIns.post<BoardList>(`${BASE}/list/create`, {
+          boardId: numericBoardId,
+          name,
+        });
+        const newList = res.data;
+        setLists((prev) => [...prev, newList]);
+        setCards((prev) => ({ ...prev, [newList.id]: [] }));
+      } catch {
+        setError("Failed to add list. Please try again.");
+      }
     },
     [numericBoardId],
   );
 
   const handleRenameList = useCallback(async (listId: number, name: string) => {
-    const res = await axiosIns.put<BoardList>(`${BASE}/list/${listId}`, {
-      name,
-    });
-    const updated = res.data;
-    // const updated = await api.updateList(listId, name);
-    setLists((prev) => prev.map((l) => (l.id === listId ? updated : l)));
+    try {
+      const res = await axiosIns.put<BoardList>(`${BASE}/list/${listId}`, {
+        name,
+      });
+      const updated = res.data;
+      setLists((prev) => prev.map((l) => (l.id === listId ? updated : l)));
+    } catch {
+      setError("Failed to rename list. Please try again.");
+    }
   }, []);
 
   const handleDeleteList = useCallback(
     async (listId: number) => {
-      await axiosIns.delete(`${BASE}/list/${listId}/${numericBoardId}`);
-      setLists((prev) => prev.filter((l) => l.id !== listId));
-      setCards((prev) => {
-        const next = { ...prev };
-        delete next[listId];
-        return next;
-      });
+      try {
+        await axiosIns.delete(`${BASE}/list/${listId}/${numericBoardId}`);
+        setLists((prev) => prev.filter((l) => l.id !== listId));
+        setCards((prev) => {
+          const next = { ...prev };
+          delete next[listId];
+          return next;
+        });
+      } catch {
+        setError("Failed to delete list. Please try again.");
+      }
     },
     [numericBoardId],
   );
@@ -386,28 +395,35 @@ const Board: React.FC = () => {
   // ── Card actions ────────────────────────────────────────────────────────────
   const handleAddCard = useCallback(
     async (listId: number, title: string) => {
-      const res = await axiosIns.post<Card>(`${BASE}/card/create/${boardId}`, {
-        listId,
-        title,
-      });
-      const newCard = res.data;
-      // const newCard = await api.createCard(listId, title);
-      setCards((prev) => ({
-        ...prev,
-        [listId]: [...(prev[listId] ?? []), newCard],
-      }));
+      try {
+        const res = await axiosIns.post<Card>(`${BASE}/card/create/${boardId}`, {
+          listId,
+          title,
+        });
+        const newCard = res.data;
+        setCards((prev) => ({
+          ...prev,
+          [listId]: [...(prev[listId] ?? []), newCard],
+        }));
+      } catch {
+        setError("Failed to add card. Please try again.");
+      }
     },
     [boardId],
   );
 
   const handleDeleteCard = useCallback(
     async (cardId: number, listId: number) => {
-      await axiosIns.delete(`${BASE}/card/${cardId}/${boardId}`);
-      setCards((prev) => ({
-        ...prev,
-        [listId]: (prev[listId] ?? []).filter((c) => c.id !== cardId),
-      }));
-      setSelectedCard(null);
+      try {
+        await axiosIns.delete(`${BASE}/card/${cardId}/${boardId}`);
+        setCards((prev) => ({
+          ...prev,
+          [listId]: (prev[listId] ?? []).filter((c) => c.id !== cardId),
+        }));
+        setSelectedCard(null);
+      } catch {
+        setError("Failed to delete card. Please try again.");
+      }
     },
     [boardId],
   );
@@ -441,6 +457,7 @@ const Board: React.FC = () => {
 
       const fromListId = card.listId;
       const isSameList = fromListId === targetListId;
+      const previousCards = cards;
 
       // Optimistic update
       setCards((prev) => {
@@ -474,14 +491,17 @@ const Board: React.FC = () => {
       });
 
       // Sync to backend
-      axiosIns
-        .post<Card>(`${BASE}/card/${card.id}/move/${boardId}`, {
+      try {
+        await axiosIns.post<Card>(`${BASE}/card/${card.id}/move/${boardId}`, {
           targetListId,
           position: targetPosition,
-        })
-        .then((r) => r.data);
+        });
+      } catch {
+        setCards(previousCards);
+        setError("Failed to move card. Please try again.");
+      }
     },
-    [boardId],
+    [boardId, cards],
   );
 
   //Board socket events management

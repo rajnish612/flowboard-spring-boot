@@ -107,13 +107,18 @@ const Boards: React.FC = () => {
   });
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [createError, setCreateError] = useState(false);
   const [selectedBackground, setSelectedBackground] = useState(backgrounds[0]);
   React.useEffect(() => {
     //Method to fetch initial boards based on the selected workspace
     axiosIns
       .get(`/api/workspace/board/${workspaceId}`)
-      .then((res) => setBoards(res.data))
-      .catch();
+      .then((res) => {
+        setBoards(res.data);
+        setLoadError(false);
+      })
+      .catch(() => setLoadError(true));
   }, [workspaceId]);
 
   // Function to create a new board
@@ -135,6 +140,7 @@ const Boards: React.FC = () => {
 
     try {
       setCreating(true);
+      setCreateError(false);
 
       const res = await axiosIns.post("/api/workspace/board/create", newBoard);
 
@@ -151,13 +157,9 @@ const Boards: React.FC = () => {
         setIsCreateModalOpen(false);
       }
     } catch (err: unknown) {
+      setCreateError(true);
       if (isAxiosError(err)) {
-        console.error(
-          "Unable to create board:",
-          err.response?.data?.message || err.message,
-        );
-      } else {
-        console.error("Unable to create board:", err);
+        console.error("Unable to create board:", err.response?.data?.message || err.message);
       }
     } finally {
       setCreating(false);
@@ -196,6 +198,13 @@ const Boards: React.FC = () => {
         </svg>
         <h2 className="text-base font-semibold text-gray-700">Your Boards</h2>
       </div>
+
+      {loadError && (
+        <p className="text-sm text-red-600">Unable to load boards. Please refresh and try again.</p>
+      )}
+      {createError && (
+        <p className="text-sm text-red-600">Unable to create the board. Please try again.</p>
+      )}
 
       {/* Board grid */}
       <div className="flex flex-wrap gap-4">
