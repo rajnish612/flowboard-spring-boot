@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Outlet, useParams, useOutletContext } from "react-router";
+import { Outlet, useParams } from "react-router";
 
 import { useAuth } from "../../hooks/UseAuth";
 import { axiosIns } from "../../utils/axiosInstance";

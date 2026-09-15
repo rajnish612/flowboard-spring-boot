@@ -1,14 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate, useOutletContext, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { axiosIns } from "../../../utils/axiosInstance";
 import { useWorkspaceContext } from "../../../hooks/useOutletContext";
-type Workspace = {
-  name: string;
-  ownerId?: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
+
 const Settings: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();

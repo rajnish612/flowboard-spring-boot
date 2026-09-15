@@ -1,5 +1,4 @@
-﻿import axios from "axios";
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useAuth } from "../../hooks/UseAuth";
 import { axiosIns } from "../../utils/axiosInstance";
 import { Link } from "react-router";
@@ -179,7 +178,23 @@ const LeftPanel: React.FC = () => {
           </div>
 
           {/* Workspace list */}
-          {workspaces.map((ws) => (
+          {fetchingWorkspaces ? (
+            <div className="space-y-2 px-2 py-1" aria-label="Loading workspaces">
+              {[0, 1, 2].map((item) => (
+                <div
+                  key={item}
+                  className="flex animate-pulse items-center gap-2 rounded-lg px-2 py-2"
+                >
+                  <div className="h-7 w-7 shrink-0 rounded-md bg-gray-200" />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <div className="h-3 w-28 rounded bg-gray-200" />
+                    <div className="h-2.5 w-20 rounded bg-gray-100" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            workspaces.map((ws) => (
             <div key={ws.id} className="rounded-lg overflow-hidden">
               {/* Workspace row */}
               <button
@@ -248,7 +263,8 @@ const LeftPanel: React.FC = () => {
                 </div>
               )}
             </div>
-          ))}
+            ))
+          )}
         </nav>
       </aside>
       {/* Create Workspace Modal */}
