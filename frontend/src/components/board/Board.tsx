@@ -244,7 +244,7 @@ const Board: React.FC = () => {
   // ── Initial load ────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const fetchAllCards = async () => {
+    const fetchAllCardsAndLists = async () => {
       if (!numericBoardId) return;
       setLoading(true);
       try {
@@ -254,7 +254,6 @@ const Board: React.FC = () => {
           ),
           axiosIns.get<BoardList[]>(`${BASE}/list/${boardId}`),
         ]);
-        setWorkspaceId(boardRes.data.workspaceId);
         setBoardBackground(boardRes.data.backgroundImage);
         const membersRes = await axiosIns.get<Member[]>(
           `/api/workspace/member/${boardRes.data.workspaceId}`,
@@ -281,7 +280,7 @@ const Board: React.FC = () => {
         setLoading(false);
       }
     };
-    fetchAllCards();
+    fetchAllCardsAndLists();
   }, [numericBoardId, boardId]);
 
   // ── List actions ────────────────────────────────────────────────────────────
@@ -396,10 +395,13 @@ const Board: React.FC = () => {
   const handleAddCard = useCallback(
     async (listId: number, title: string) => {
       try {
-        const res = await axiosIns.post<Card>(`${BASE}/card/create/${boardId}`, {
-          listId,
-          title,
-        });
+        const res = await axiosIns.post<Card>(
+          `${BASE}/card/create/${boardId}`,
+          {
+            listId,
+            title,
+          },
+        );
         const newCard = res.data;
         setCards((prev) => ({
           ...prev,
