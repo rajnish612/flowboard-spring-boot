@@ -37,7 +37,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID in .env}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?Set GOOGLE_CLIENT_SECRET in .env}
       EUREKA_URL: http://eureka-server:8761/eureka/
-      CLIENT_URI: http://localhost:5173
+      CLIENT_URI: http://localhost:3000
       GOOGLE_REDIRECT_URI: http://localhost:8081/login/oauth2/code/google
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
 
@@ -72,7 +72,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-user}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       EUREKA_URL: http://eureka-server:8761/eureka/
-      WEBSOCKET_ALLOWED_ORIGINS: http://localhost:5173
+      WEBSOCKET_ALLOWED_ORIGINS: http://localhost:3000
 
   gateway:
     build: ./gateway
@@ -89,18 +89,19 @@ services:
         condition: service_started
     environment:
       EUREKA_URL: http://eureka-server:8761/eureka/
-      CORS_ALLOWED_ORIGINS: http://localhost:5173
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
 
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     args:
-  #       VITE_API_BASE_URL: http://localhost:8081
-  #   ports:
-  #     - "3000:80"
-  #   depends_on:
-  #     gateway:
-  #       condition: service_started
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8081
+        VITE_WS_URL: ws://localhost:8083/ws
+    ports:
+      - "3000:80"
+    depends_on:
+      gateway:
+        condition: service_started
 
 volumes:
   postgres-data:
