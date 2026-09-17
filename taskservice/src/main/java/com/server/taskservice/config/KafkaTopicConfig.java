@@ -13,7 +13,7 @@ public class KafkaTopicConfig {
         return new NewTopic(
                 "notification-events",
                 3,      // Number of partitions
-                (short) 1// Replication factor for local development
+                (short) 2// Replication factor for local development
         );
     }
 }
