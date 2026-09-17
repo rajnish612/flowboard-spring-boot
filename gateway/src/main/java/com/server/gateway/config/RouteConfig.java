@@ -76,6 +76,16 @@ public class RouteConfig {
                 .before(stripPrefix(2))
                 .filter(lb("taskservice"))
                 .build();
+    }    //Route for notification service
+
+    @Bean
+    public RouterFunction<ServerResponse> notificationServiceRoute() {
+        return route("notificationservice")
+                .route(path("/api/notifications/**"), http())
+                .before(JwtCookieFilter.addJwtToHeader())
+                .before(stripPrefix(2))
+                .filter(lb("notificationservice"))
+                .build();
     }
 
 

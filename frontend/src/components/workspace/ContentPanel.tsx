@@ -200,6 +200,7 @@ const ContentPanel: React.FC = () => {
           </h1>
           <span className="mt-0.5 text-xs font-medium text-slate-400">Free Plan</span>
         </div>
+
       </div>
 
       {/* Floating User Profile */}
