@@ -1,6 +1,6 @@
 import { Bell, Check, CheckCheck, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useAuth } from "../hooks/UseAuth";
 import { axiosIns } from "../utils/axiosInstance";
 import {
@@ -12,6 +12,7 @@ const NOTIFICATIONS_BASE = "/api/notifications";
 
 const NotificationToast = () => {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [notification, setNotification] = useState<NotificationSocketData | null>(null);
   const [notifications, setNotifications] = useState<NotificationSocketData[]>([]);
@@ -22,6 +23,7 @@ const NotificationToast = () => {
     /^\/dashboard\/(?:boards|members|settings|activities)\/(\d+)/,
   );
   const selectedWorkspaceId = workspaceMatch ? Number(workspaceMatch[1]) : null;
+  const isDashboard = pathname.startsWith("/dashboard");
   const visibleNotifications = selectedWorkspaceId
     ? notifications.filter(
         (item) => item.workspaceId === selectedWorkspaceId,
@@ -82,6 +84,16 @@ const NotificationToast = () => {
     setNotifications((current) =>
       current.map((item) => ({ ...item, read: true })),
     );
+  };
+
+  const openNotification = async (item: NotificationSocketData) => {
+    await markAsRead(item);
+
+    if (item.boardId !== null) {
+      setOpen(false);
+      setNotification(null);
+      navigate(`/board/${item.boardId}`);
+    }
   };
 
   if (!user) return null;
@@ -150,7 +162,7 @@ const NotificationToast = () => {
                   <button
                     type="button"
                     key={item.id}
-                    onClick={() => markAsRead(item)}
+                    onClick={() => openNotification(item)}
                     className={`flex w-full gap-3 border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50 ${
                       item.read ? "bg-white" : "bg-indigo-50/60"
                     }`}
@@ -193,6 +205,7 @@ const NotificationToast = () => {
           className="fixed right-4 top-4 z-100 w-[min(calc(100vw-2rem),28rem)] rounded-2xl border border-indigo-200 bg-white p-4 shadow-2xl"
           role="status"
           aria-live="polite"
+          onClick={() => openNotification(notification)}
         >
           <div className="flex items-start gap-3">
             {notification.actorAvatar ? (
@@ -209,10 +222,41 @@ const NotificationToast = () => {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-slate-900">{notification.title}</p>
               <p className="mt-1 text-sm text-slate-600">{notification.message}</p>
+              {isDashboard && (
+                <div className="mt-2 space-y-0.5 text-xs text-slate-500">
+                  {notification.actorName && (
+                    <p>
+                      <span className="font-medium text-slate-700">User:</span>{" "}
+                      {notification.actorName}
+                    </p>
+                  )}
+                  {notification.workspaceName && (
+                    <p>
+                      <span className="font-medium text-slate-700">Workspace:</span>{" "}
+                      {notification.workspaceName}
+                    </p>
+                  )}
+                  {notification.boardName && (
+                    <p>
+                      <span className="font-medium text-slate-700">Board:</span>{" "}
+                      {notification.boardName}
+                    </p>
+                  )}
+                  {notification.cardTitle && (
+                    <p>
+                      <span className="font-medium text-slate-700">Card:</span>{" "}
+                      {notification.cardTitle}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <button
               type="button"
-              onClick={() => setNotification(null)}
+              onClick={(event) => {
+                event.stopPropagation();
+                setNotification(null);
+              }}
               className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               aria-label="Dismiss notification"
             >
