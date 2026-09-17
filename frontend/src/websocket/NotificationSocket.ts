@@ -5,10 +5,27 @@ export type NotificationSocketData = {
   id: number;
   recipientId: number;
   actorId: number;
-  workspaceId?: number;
-  boardId?: number;
-  cardId?: number;
-  type: string;
+  actorName: string | null;
+  actorAvatar: string | null;
+  workspaceId: number | null;
+  workspaceName: string | null;
+  boardId: number | null;
+  boardName: string | null;
+  cardId: number | null;
+  cardTitle: string | null;
+  type:
+    | "CARD_CREATED"
+    | "CARD_UPDATED"
+    | "CARD_MOVED"
+    | "CARD_DELETED"
+    | "CARD_ASSIGNED"
+    | "CARD_UNASSIGNED"
+    | "CARD_DUE_SOON"
+    | "CARD_DUE"
+    | "LIST_CREATED"
+    | "LIST_UPDATED"
+    | "LIST_MOVED"
+    | "LIST_DELETED";
   title: string;
   message: string;
   read: boolean;
