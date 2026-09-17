@@ -74,8 +74,7 @@ public class BoardListService {
                         getBoard(saved.getBoardId()),
                         NotificationType.LIST_CREATED,
                         "New list created",
-                        "User " + userId +
-                                " created list \"" + saved.getName() + "\""));
+                        "created list \"" + saved.getName() + "\""));
 
         log.info("Created list '{}' at position {} for board {}", saved.getName(), saved.getPosition(),
                 saved.getBoardId());
@@ -111,8 +110,7 @@ public class BoardListService {
                         getBoard(updated.getBoardId()),
                         NotificationType.LIST_UPDATED,
                         "List updated",
-                        "User " + userId +
-                                " updated list \"" + updated.getName() + "\""));
+                        "updated list \"" + updated.getName() + "\""));
         log.info("Updated list id={}", id);
         return toDTO(updated);
     }
@@ -146,8 +144,7 @@ public class BoardListService {
                         getBoard(boardId),
                         NotificationType.LIST_DELETED,
                         "List deleted",
-                        "User " + userId +
-                                " deleted list \"" + listName + "\""));
+                        "deleted list \"" + listName + "\""));
 
         log.info("Deleted list id={} and its cards", id);
     }
@@ -204,8 +201,7 @@ public class BoardListService {
                         getBoard(list.getBoardId()),
                         NotificationType.LIST_MOVED,
                         "List moved",
-                        "User " + userId +
-                                " moved list \"" + list.getName() + "\""));
+                        "moved list \"" + list.getName() + "\""));
         log.info("Reordered list id={} to position {}", id, targetIndex);
         return toDTO(list);
     }
@@ -228,7 +224,7 @@ public class BoardListService {
                 .boardName(board != null ? board.getName() : null)
                 .type(type)
                 .title(title)
-                .message(message)
+                .message("User " + actor.getName() + " " + message)
                 .recipientIds(workspaceClient.getWorkspaceMemberIds(workspace.getId()))
                 .build();
     }
