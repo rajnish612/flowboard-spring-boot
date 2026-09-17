@@ -68,10 +68,10 @@ public class NotificationService {
          * This is important when notifying many workspace members.
          * We don't want to call Auth/Workspace/Task Service for every recipient.
          */
-        UserDTO actor = authClient.getUserById(event.getActorId());
+        UserDTO actor = authClient.getUser(event.getActorId());
 
         WorkspaceDTO workspace =
-                workspaceClient.getWorkspaceById(event.getWorkspaceId());
+                workspaceClient.getWorkspaceByWorkspaceId(event.getWorkspaceId());
 
         BoardDTO board = null;
 
@@ -109,10 +109,7 @@ public class NotificationService {
         // Save all notifications in one database operation.
         List<Notification> savedNotifications =
                 notificationRepository.saveAll(notifications);
-
-        /*
-         * Send the populated notification to each recipient.
-         */
+//        Send the populated notification to each recipient.
         for (Notification notification : savedNotifications) {
 
             NotificationDTO dto = toDTO(
@@ -242,12 +239,12 @@ public class NotificationService {
     ) {
 
         UserDTO actor =
-                authClient.getUserById(notification.getActorId());
+                authClient.getUser(notification.getActorId());
 
         WorkspaceDTO workspace = null;
 
         if (notification.getWorkspaceId() != null) {
-            workspace = workspaceClient.getWorkspaceById(
+            workspace = workspaceClient.getWorkspaceByWorkspaceId(
                     notification.getWorkspaceId()
             );
         }
