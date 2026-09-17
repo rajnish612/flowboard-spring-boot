@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 
 export type NotificationSocketData = {
@@ -18,6 +18,12 @@ export type NotificationSocketData = {
 export const useNotificationSocket = (
   onNotification: (notification: NotificationSocketData) => void,
 ) => {
+  const onNotificationRef = useRef(onNotification);
+
+  useEffect(() => {
+    onNotificationRef.current = onNotification;
+  }, [onNotification]);
+
   useEffect(() => {
     const client = new Client({
       brokerURL: import.meta.env.VITE_NOTIFICATION_WS_URL,
@@ -27,7 +33,7 @@ export const useNotificationSocket = (
         client.subscribe("/user/queue/notifications", (message) => {
           const notification: NotificationSocketData = JSON.parse(message.body);
 
-          onNotification(notification);
+          onNotificationRef.current(notification);
         });
       },
 
@@ -45,5 +51,5 @@ export const useNotificationSocket = (
     return () => {
       client.deactivate();
     };
-  }, [onNotification]);
+  }, []);
 };
