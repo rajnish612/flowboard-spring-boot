@@ -17,6 +17,7 @@ export type NotificationSocketData = {
 
 export const useNotificationSocket = (
   onNotification: (notification: NotificationSocketData) => void,
+  enabled = true,
 ) => {
   const onNotificationRef = useRef(onNotification);
 
@@ -25,6 +26,10 @@ export const useNotificationSocket = (
   }, [onNotification]);
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     const client = new Client({
       brokerURL: import.meta.env.VITE_NOTIFICATION_WS_URL,
       reconnectDelay: 5000,
@@ -51,5 +56,5 @@ export const useNotificationSocket = (
     return () => {
       client.deactivate();
     };
-  }, []);
+  }, [enabled]);
 };
