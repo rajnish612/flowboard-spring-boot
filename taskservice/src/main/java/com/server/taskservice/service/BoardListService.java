@@ -1,8 +1,11 @@
 package com.server.taskservice.service;
 
+import com.server.notificationservice.entity.NotificationType;
 import com.server.taskservice.client.WorkspaceClient;
 import com.server.taskservice.dto.BoardListDTO;
+import com.server.taskservice.dto.NotificationEvent;
 import com.server.taskservice.dto.WorkspaceDTO;
+import com.server.taskservice.kafka.NotificationEventPublisher;
 import com.server.taskservice.model.ActivityType;
 import com.server.taskservice.model.BoardList;
 import com.server.taskservice.repository.BoardListRepo;
@@ -25,6 +28,7 @@ public class BoardListService {
     private final CardRepo cardRepo;
     private final ActivityService activityService;
     private final WorkspaceClient workspaceClient;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     // Fetch all lists for a board, already ordered by position
     public List<BoardListDTO> getListsByBoardId(Long boardId) {
@@ -62,6 +66,22 @@ public class BoardListService {
                 "created list \"" + saved.getName() + "\"",
                 null
         );
+        // Publish notification event for all workspace members.
+        notificationEventPublisher.publish(
+                NotificationEvent.builder()
+                        .actorId(userId)
+                        .workspaceId(workspace.getId())
+                        .boardId(saved.getBoardId())
+                        .type(NotificationType.LIST_CREATED)
+                        .title("New list created")
+                        .message(
+                                "User " + userId +
+                                        " created list \"" + saved.getName() + "\""
+                        )
+                        .notifyAllMembers(true)
+                        .build()
+        );
+
         log.info("Created list '{}' at position {} for board {}", saved.getName(), saved.getPosition(), saved.getBoardId());
         return toDTO(saved);
     }
@@ -90,6 +110,23 @@ public class BoardListService {
                 "Updated list \"" + updated.getName() + "\"",
                 null
         );
+
+        // Publish notification event for all workspace members.
+        notificationEventPublisher.publish(
+                NotificationEvent.builder()
+                        .actorId(userId)
+                        .workspaceId(workspace.getId())
+                        .boardId(updated.getBoardId())
+                        .type(NotificationType.LIST_UPDATED)
+                        .title("List updated")
+                        .message(
+                                "User " + userId +
+                                        " updated list \"" + updated.getName() + "\""
+                        )
+                        .notifyAllMembers(true)
+                        .build()
+        );
+
         log.info("Updated list id={}", id);
         return toDTO(updated);
     }
@@ -100,6 +137,8 @@ public class BoardListService {
         BoardList list = boardListRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
 
+        Long boardId = list.getBoardId();
+        String listName = list.getName();
         // Remove all cards belonging to this list first
         WorkspaceDTO workspace =
                 workspaceClient.getWorkspaceByBoardId(list.getBoardId());
@@ -115,6 +154,20 @@ public class BoardListService {
         );
         cardRepo.deleteByListId(id);
         boardListRepo.delete(list);
+        notificationEventPublisher.publish(
+                NotificationEvent.builder()
+                        .actorId(userId)
+                        .workspaceId(workspace.getId())
+                        .boardId(boardId)
+                        .type(NotificationType.LIST_DELETED)
+                        .title("List deleted")
+                        .message(
+                                "User " + userId +
+                                        " deleted list \"" + listName + "\""
+                        )
+                        .notifyAllMembers(true)
+                        .build()
+        );
 
         log.info("Deleted list id={} and its cards", id);
     }
@@ -165,6 +218,20 @@ public class BoardListService {
                 ActivityType.LIST_MOVED,
                 "Moved list \"" + list.getName() + "\"",
                 null
+        );
+        notificationEventPublisher.publish(
+                NotificationEvent.builder()
+                        .actorId(userId)
+                        .workspaceId(workspace.getId())
+                        .boardId(list.getBoardId())
+                        .type(NotificationType.LIST_MOVED)
+                        .title("List moved")
+                        .message(
+                                "User " + userId +
+                                        " moved list \"" + list.getName() + "\""
+                        )
+                        .notifyAllMembers(true)
+                        .build()
         );
         log.info("Reordered list id={} to position {}", id, targetIndex);
         return toDTO(list);
