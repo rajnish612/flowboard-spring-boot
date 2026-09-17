@@ -19,18 +19,11 @@ const NotificationToast = () => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const workspaceMatch = pathname.match(
-    /^\/dashboard\/(?:boards|members|settings|activities)\/(\d+)/,
-  );
-  const selectedWorkspaceId = workspaceMatch ? Number(workspaceMatch[1]) : null;
   const isDashboard = pathname.startsWith("/dashboard");
-  const visibleNotifications = selectedWorkspaceId
-    ? notifications.filter(
-        (item) => item.workspaceId === selectedWorkspaceId,
-      )
-    : notifications;
+  const visibleNotifications = notifications;
   const unreadCount = visibleNotifications.filter((item) => !item.read).length;
 
+  // Keep the history list and toast synchronized when a notification arrives through WebSocket.
   const handleNotification = (incoming: NotificationSocketData) => {
     setNotifications((current) => [
       incoming,
@@ -41,10 +34,10 @@ const NotificationToast = () => {
 
   useNotificationSocket(handleNotification, Boolean(user));
 
+  // Refresh notification history when the menu opens or the authenticated user changes.
   useEffect(() => {
     if (!user) return;
 
-    setLoading(true);
     axiosIns
       .get<NotificationSocketData[]>(NOTIFICATIONS_BASE)
       .then((response) => {
@@ -66,6 +59,7 @@ const NotificationToast = () => {
     return () => clearTimeout(timeout);
   }, [notification]);
 
+  // Mark one notification as read before optionally navigating to its board.
   const markAsRead = async (item: NotificationSocketData) => {
     if (item.read) return;
 
@@ -77,6 +71,7 @@ const NotificationToast = () => {
     );
   };
 
+  // The backend marks all of the user's notifications as read in one request.
   const markAllAsRead = async () => {
     if (unreadCount === 0) return;
 
@@ -86,6 +81,7 @@ const NotificationToast = () => {
     );
   };
 
+  // Open the related board after marking the selected notification as read.
   const openNotification = async (item: NotificationSocketData) => {
     await markAsRead(item);
 
@@ -96,17 +92,26 @@ const NotificationToast = () => {
     }
   };
 
+  const toggleNotifications = () => {
+    if (!open) {
+      setLoading(true);
+    }
+    setOpen((current) => !current);
+  };
+
   if (!user) return null;
 
   const actorInitial =
     notification?.actorName?.trim().charAt(0).toUpperCase() || "?";
+  const isBoard = pathname.startsWith("/board/");
 
   return (
     <>
-      <div className="fixed right-24 top-5 z-100">
+      {!isBoard && (
+        <div className="fixed right-24 top-5 z-100">
         <button
           type="button"
-          onClick={() => setOpen((current) => !current)}
+          onClick={toggleNotifications}
           className="relative rounded-xl p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-indigo-600"
           aria-label="Open notifications"
           aria-expanded={open}
@@ -198,7 +203,8 @@ const NotificationToast = () => {
             </div>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {notification && (
         <div
