@@ -32,25 +32,13 @@ public class NotificationService {
 
         List<Long> recipientIds;
 
-        if (event.isNotifyAllMembers()) {
-
-            // Get all workspace members when everyone should be notified.
-            recipientIds = workspaceClient
-                    .getWorkspaceMemberIds(event.getWorkspaceId());
-
-        } else {
-
-            // Use the specific recipients for a targeted notification.
-            if (event.getRecipientIds() == null ||
-                    event.getRecipientIds().isEmpty()) {
-
-                throw new IllegalArgumentException(
-                        "recipientIds is required for a targeted notification"
-                );
-            }
-
-            recipientIds = event.getRecipientIds();
+                if (event.getRecipientIds() == null || event.getRecipientIds().isEmpty()) {
+                        throw new IllegalArgumentException(
+                                        "recipientIds is required for a Kafka notification event"
+                        );
         }
+
+                recipientIds = event.getRecipientIds();
 
         // Don't notify the user who performed the action.
         recipientIds = recipientIds.stream()
@@ -68,26 +56,26 @@ public class NotificationService {
          * This is important when notifying many workspace members.
          * We don't want to call Auth/Workspace/Task Service for every recipient.
          */
-        UserDTO actor = authClient.getUser(event.getActorId());
+        UserDTO actor = UserDTO.builder()
+                .id(event.getActorId())
+                .name(event.getActorName())
+                .avatar(event.getActorAvatar())
+                .build();
 
-        WorkspaceDTO workspace =
-                workspaceClient.getWorkspaceByWorkspaceId(event.getWorkspaceId());
+        WorkspaceDTO workspace = WorkspaceDTO.builder()
+                .id(event.getWorkspaceId())
+                .name(event.getWorkspaceName())
+                .build();
 
-        BoardDTO board = null;
+        BoardDTO board = event.getBoardId() == null ? null : BoardDTO.builder()
+                .id(event.getBoardId())
+                .name(event.getBoardName())
+                .build();
 
-        if (event.getBoardId() != null) {
-            board = workspaceClient
-                    .getBoardsByBoardsId(List.of(event.getBoardId()))
-                    .stream()
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        CardDTO card = null;
-
-        if (event.getCardId() != null) {
-            card = taskClient.getCardById(event.getCardId());
-        }
+        CardDTO card = event.getCardId() == null ? null : CardDTO.builder()
+                .id(event.getCardId())
+                .title(event.getCardTitle())
+                .build();
 
         /*
          * Create one database notification for every recipient.

@@ -1,9 +1,11 @@
 package com.server.taskservice.service;
 
-import com.server.notificationservice.entity.NotificationType;
+import com.server.taskservice.client.AuthClient;
 import com.server.taskservice.client.WorkspaceClient;
+import com.server.taskservice.dto.BoardDTO;
 import com.server.taskservice.dto.BoardListDTO;
 import com.server.taskservice.dto.NotificationEvent;
+import com.server.taskservice.dto.UserDTO;
 import com.server.taskservice.dto.WorkspaceDTO;
 import com.server.taskservice.kafka.NotificationEventPublisher;
 import com.server.taskservice.model.ActivityType;
@@ -15,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.server.taskservice.model.NotificationType;
 
 import java.util.List;
 
@@ -27,6 +30,7 @@ public class BoardListService {
     private final BoardListRepo boardListRepo;
     private final CardRepo cardRepo;
     private final ActivityService activityService;
+    private final AuthClient authClient;
     private final WorkspaceClient workspaceClient;
     private final NotificationEventPublisher notificationEventPublisher;
 
@@ -51,11 +55,9 @@ public class BoardListService {
                 .position(nextPosition)
                 .build();
 
-
         BoardList saved = boardListRepo.save(list);
 
-        WorkspaceDTO workspace =
-                workspaceClient.getWorkspaceByBoardId(dto.getBoardId());
+        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(dto.getBoardId());
         activityService.createActivity(
                 userId,
                 workspace.getId(),
@@ -64,25 +66,19 @@ public class BoardListService {
                 null,
                 ActivityType.LIST_CREATED,
                 "created list \"" + saved.getName() + "\"",
-                null
-        );
-        // Publish notification event for all workspace members.
+                null);
         notificationEventPublisher.publish(
-                NotificationEvent.builder()
-                        .actorId(userId)
-                        .workspaceId(workspace.getId())
-                        .boardId(saved.getBoardId())
-                        .type(NotificationType.LIST_CREATED)
-                        .title("New list created")
-                        .message(
-                                "User " + userId +
-                                        " created list \"" + saved.getName() + "\""
-                        )
-                        .notifyAllMembers(true)
-                        .build()
-        );
+                buildNotificationEvent(
+                        userId,
+                        workspace,
+                        getBoard(saved.getBoardId()),
+                        NotificationType.LIST_CREATED,
+                        "New list created",
+                        "User " + userId +
+                                " created list \"" + saved.getName() + "\""));
 
-        log.info("Created list '{}' at position {} for board {}", saved.getName(), saved.getPosition(), saved.getBoardId());
+        log.info("Created list '{}' at position {} for board {}", saved.getName(), saved.getPosition(),
+                saved.getBoardId());
         return toDTO(saved);
     }
 
@@ -95,11 +91,9 @@ public class BoardListService {
             list.setName(dto.getName());
         }
 
-
         BoardList updated = boardListRepo.save(list);
 
-        WorkspaceDTO workspace =
-                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
         activityService.createActivity(
                 userId,
                 workspace.getId(),
@@ -108,30 +102,23 @@ public class BoardListService {
                 null,
                 ActivityType.LIST_UPDATED,
                 "Updated list \"" + updated.getName() + "\"",
-                null
-        );
+                null);
 
-        // Publish notification event for all workspace members.
         notificationEventPublisher.publish(
-                NotificationEvent.builder()
-                        .actorId(userId)
-                        .workspaceId(workspace.getId())
-                        .boardId(updated.getBoardId())
-                        .type(NotificationType.LIST_UPDATED)
-                        .title("List updated")
-                        .message(
-                                "User " + userId +
-                                        " updated list \"" + updated.getName() + "\""
-                        )
-                        .notifyAllMembers(true)
-                        .build()
-        );
-
+                buildNotificationEvent(
+                        userId,
+                        workspace,
+                        getBoard(updated.getBoardId()),
+                        NotificationType.LIST_UPDATED,
+                        "List updated",
+                        "User " + userId +
+                                " updated list \"" + updated.getName() + "\""));
         log.info("Updated list id={}", id);
         return toDTO(updated);
     }
 
-    // Delete a list and all its cards (cascaded manually since entities are in the same service)
+    // Delete a list and all its cards (cascaded manually since entities are in the
+    // same service)
     @Transactional
     public void deleteList(Long id, Long userId) {
         BoardList list = boardListRepo.findById(id)
@@ -140,8 +127,7 @@ public class BoardListService {
         Long boardId = list.getBoardId();
         String listName = list.getName();
         // Remove all cards belonging to this list first
-        WorkspaceDTO workspace =
-                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
         activityService.createActivity(
                 userId,
                 workspace.getId(),
@@ -150,24 +136,18 @@ public class BoardListService {
                 null,
                 ActivityType.LIST_DELETED,
                 "Deleted list \"" + list.getName() + "\"",
-                null
-        );
+                null);
         cardRepo.deleteByListId(id);
         boardListRepo.delete(list);
         notificationEventPublisher.publish(
-                NotificationEvent.builder()
-                        .actorId(userId)
-                        .workspaceId(workspace.getId())
-                        .boardId(boardId)
-                        .type(NotificationType.LIST_DELETED)
-                        .title("List deleted")
-                        .message(
-                                "User " + userId +
-                                        " deleted list \"" + listName + "\""
-                        )
-                        .notifyAllMembers(true)
-                        .build()
-        );
+                buildNotificationEvent(
+                        userId,
+                        workspace,
+                        getBoard(boardId),
+                        NotificationType.LIST_DELETED,
+                        "List deleted",
+                        "User " + userId +
+                                " deleted list \"" + listName + "\""));
 
         log.info("Deleted list id={} and its cards", id);
     }
@@ -207,8 +187,7 @@ public class BoardListService {
             siblings.get(index).setPosition(index);
         }
         boardListRepo.saveAll(siblings);
-        WorkspaceDTO workspace =
-                workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
         activityService.createActivity(
                 userId,
                 workspace.getId(),
@@ -217,24 +196,48 @@ public class BoardListService {
                 null,
                 ActivityType.LIST_MOVED,
                 "Moved list \"" + list.getName() + "\"",
-                null
-        );
+                null);
         notificationEventPublisher.publish(
-                NotificationEvent.builder()
-                        .actorId(userId)
-                        .workspaceId(workspace.getId())
-                        .boardId(list.getBoardId())
-                        .type(NotificationType.LIST_MOVED)
-                        .title("List moved")
-                        .message(
-                                "User " + userId +
-                                        " moved list \"" + list.getName() + "\""
-                        )
-                        .notifyAllMembers(true)
-                        .build()
-        );
+                buildNotificationEvent(
+                        userId,
+                        workspace,
+                        getBoard(list.getBoardId()),
+                        NotificationType.LIST_MOVED,
+                        "List moved",
+                        "User " + userId +
+                                " moved list \"" + list.getName() + "\""));
         log.info("Reordered list id={} to position {}", id, targetIndex);
         return toDTO(list);
+    }
+
+    private NotificationEvent buildNotificationEvent(
+            Long userId,
+            WorkspaceDTO workspace,
+            BoardDTO board,
+            NotificationType type,
+            String title,
+            String message) {
+        UserDTO actor = authClient.getProfile(userId);
+        return NotificationEvent.builder()
+                .actorId(userId)
+                .actorName(actor.getName())
+                .actorAvatar(actor.getAvatar())
+                .workspaceId(workspace.getId())
+                .workspaceName(workspace.getName())
+                .boardId(board != null ? board.getId() : null)
+                .boardName(board != null ? board.getName() : null)
+                .type(type)
+                .title(title)
+                .message(message)
+                .recipientIds(workspaceClient.getWorkspaceMemberIds(workspace.getId()))
+                .build();
+    }
+
+    private BoardDTO getBoard(Long boardId) {
+        return workspaceClient.getBoardsByBoardsId(List.of(boardId))
+                .stream()
+                .findFirst()
+                .orElse(null);
     }
 
     // Helper: convert entity to DTO
