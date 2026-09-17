@@ -1,0 +1,22 @@
+package com.server.notificationservice.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+//DTO object for workspaces
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class WorkspaceDTO {
+    private Long id;
+
+    private String name;
+
+
+
+}
