@@ -11,6 +11,10 @@ import {
   type BoardSocketEvent,
 } from "../../websocket/boardSocket";
 import { useAuth } from "../../hooks/UseAuth";
+import {
+  useNotificationSocket,
+  type NotificationSocketData,
+} from "../../websocket/NotificationSocket";
 // ─── Card Detail Modal ────────────────────────────────────────────────────────
 
 const BASE = "/api/task";
@@ -612,6 +616,13 @@ const Board: React.FC = () => {
     },
     [user?.id],
   );
+  const handleNotification = (notification: NotificationSocketData) => {
+    console.log("Received notification:", notification);
+
+    // Show toast, update notification count, or update local state.
+  };
+  useNotificationSocket(handleNotification);
+
   useBoardSocket(boardId ? Number(boardId) : undefined, handleBoardEvent);
   // ── Render ──────────────────────────────────────────────────────────────────
   if (loading) {

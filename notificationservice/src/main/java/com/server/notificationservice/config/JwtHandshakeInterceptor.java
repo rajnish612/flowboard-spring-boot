@@ -84,7 +84,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         for (Cookie cookie : cookies) {
 
             // Use the actual name of your JWT cookie.
-            if ("jwt".equals(cookie.getName())) {
+            if ("AUTH_TOKEN".equals(cookie.getName())) {
                 return cookie.getValue();
             }
         }

@@ -20,15 +20,10 @@ export const useNotificationSocket = (
 ) => {
   useEffect(() => {
     const client = new Client({
-      // Notification Service WebSocket endpoint.
-      brokerURL: "ws://localhost:8084/ws",
-
-      // Reconnect automatically if the connection drops.
+      brokerURL: import.meta.env.VITE_NOTIFICATION_WS_URL,
       reconnectDelay: 5000,
 
       onConnect: () => {
-        // Subscribe to the currently authenticated user's
-        // private notification destination.
         client.subscribe("/user/queue/notifications", (message) => {
           const notification: NotificationSocketData = JSON.parse(message.body);
 
@@ -37,11 +32,11 @@ export const useNotificationSocket = (
       },
 
       onStompError: (frame) => {
-        console.error("Notification STOMP error:", frame);
+        console.error("STOMP error:", frame);
       },
 
       onWebSocketError: (error) => {
-        console.error("Notification WebSocket error:", error);
+        console.error("WebSocket error:", error);
       },
     });
 
