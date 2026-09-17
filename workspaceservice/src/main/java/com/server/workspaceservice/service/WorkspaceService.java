@@ -13,6 +13,7 @@ import com.server.workspaceservice.exception.BusinessRuleException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -59,7 +60,7 @@ public class WorkspaceService {
     public void deleteWorkspace(Long id, Long userId) {
         boolean hasAccess = workSpaceRepo.checkIsOwner(userId, id);
         if (!hasAccess) {
-                        throw new AccessDeniedException("You are not the owner of this workspace");
+            throw new AccessDeniedException("You are not the owner of this workspace");
         }
         workSpaceRepo.deleteById(id);
     }
@@ -172,7 +173,7 @@ public class WorkspaceService {
     public UserDTO addMember(AddMemberDTO addMemberDTO, Long userId) {
         boolean hasAccess = workSpaceRepo.checkIsOwner(userId, addMemberDTO.getWorkspaceId());
         if (!hasAccess) {
-                        throw new AccessDeniedException("You are not the owner of this workspace");
+            throw new AccessDeniedException("You are not the owner of this workspace");
         }
 
         UserDTO user = authClient.getUserByEmail(addMemberDTO.getEmail());
@@ -188,37 +189,41 @@ public class WorkspaceService {
         return user;
     }
 
-        // Remove a member from a workspace. Only the workspace owner can do this.
-        public void removeMember(Long workspaceId, Long memberUserId, Long userId) {
-                Workspace workspace = workSpaceRepo.findById(workspaceId)
-                                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
+    // Remove a member from a workspace. Only the workspace owner can do this.
+    public void removeMember(Long workspaceId, Long memberUserId, Long userId) {
+        Workspace workspace = workSpaceRepo.findById(workspaceId)
+                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
 
-                if (!workspace.getOwnerId().equals(userId)) {
-                        throw new AccessDeniedException("You are not the owner of this workspace");
-                }
-
-                if (workspace.getOwnerId().equals(memberUserId)) {
-                        throw new BusinessRuleException("The workspace owner cannot be removed");
-                }
-
-                WorkspaceMembers member = workspaceMemberRepo
-                                .findByWorkspaceIdAndUserId(workspaceId, memberUserId)
-                                .orElseThrow(() -> new EntityNotFoundException("Member not found in this workspace"));
-
-                workspaceMemberRepo.delete(member);
+        if (!workspace.getOwnerId().equals(userId)) {
+            throw new AccessDeniedException("You are not the owner of this workspace");
         }
+
+        if (workspace.getOwnerId().equals(memberUserId)) {
+            throw new BusinessRuleException("The workspace owner cannot be removed");
+        }
+
+        WorkspaceMembers member = workspaceMemberRepo
+                .findByWorkspaceIdAndUserId(workspaceId, memberUserId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found in this workspace"));
+
+        workspaceMemberRepo.delete(member);
+    }
 
 
     //Method to update workspace
     public void updateWorkspace(Long workspaceId, WorkspaceDTO workspaceDTO, Long userId) {
         Workspace workspace = workSpaceRepo.findById(workspaceId)
-                                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
+                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
         if (!workspace.getOwnerId().equals(userId)) {
-                        throw new AccessDeniedException("You are not the owner of this workspace");
+            throw new AccessDeniedException("You are not the owner of this workspace");
         }
 
         workspace.setName(workspaceDTO.getName());
 
         workSpaceRepo.save(workspace);
+    }
+
+    public List<Long> getWorkspaceMemberIds(Long workspaceId) {
+        return workspaceMemberRepo.findByWorkspaceId(workspaceId).stream().map(m -> m.getUserId()).toList();
     }
 }

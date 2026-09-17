@@ -13,8 +13,8 @@ import java.util.List;
 @FeignClient(name = "workspaceservice")
 public interface WorkspaceClient {
     // Get workspace details so we can populate workspaceName.
-    @GetMapping("/workspace/{workspaceId}")
-    WorkspaceDTO getWorkspaceById(
+    @GetMapping("/{workspaceId}")
+    WorkspaceDTO getWorkspaceByWorkspaceId(
             @PathVariable Long workspaceId
     );
 
@@ -26,7 +26,7 @@ public interface WorkspaceClient {
     );
 
     // Get all member user IDs belonging to a workspace.
-    @GetMapping("/workspace/{workspaceId}/members/ids")
+    @GetMapping("/member/{workspaceId}/ids")
     List<Long> getWorkspaceMemberIds(
             @PathVariable Long workspaceId);
 }

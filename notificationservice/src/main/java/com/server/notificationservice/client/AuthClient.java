@@ -10,8 +10,8 @@ public interface AuthClient {
 
     // Get the user who performed the action.
     // Used to populate actorName and actorAvatar.
-    @GetMapping("/api/auth/users/{userId}")
-    UserDTO getUserById(
-            @PathVariable Long userId
+    @GetMapping("/profile/{id}")
+    UserDTO getUser(
+            @PathVariable Long id
     );
 }
