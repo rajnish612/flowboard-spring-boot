@@ -22,6 +22,9 @@ const NotificationToast = () => {
 
   if (!notification) return null;
 
+  const actorInitial =
+    notification.actorName?.trim().charAt(0).toUpperCase() || "?";
+
   return (
     <div
       className="fixed right-4 top-4 z-100 w-[min(calc(100vw-2rem),28rem)] rounded-2xl border border-indigo-200 bg-white p-4 shadow-2xl"
@@ -29,15 +32,31 @@ const NotificationToast = () => {
       aria-live="polite"
     >
       <div className="flex items-start gap-3">
-        <Bell
-          className="mt-0.5 shrink-0 text-indigo-600"
-          size={20}
-          aria-hidden="true"
-        />
+        {notification.actorAvatar ? (
+          <img
+            src={notification.actorAvatar}
+            alt={notification.actorName ?? "User"}
+            className="h-10 w-10 shrink-0 rounded-full object-cover"
+          />
+        ) : (
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700"
+            aria-hidden="true"
+          >
+            {actorInitial}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900">
-            {notification.title}
-          </p>
+          <div className="flex items-center gap-2">
+            <Bell
+              className="shrink-0 text-indigo-600"
+              size={16}
+              aria-hidden="true"
+            />
+            <p className="text-sm font-semibold text-slate-900">
+              {notification.title}
+            </p>
+          </div>
           <p className="mt-1 text-sm text-slate-600">
             {notification.message}
           </p>
