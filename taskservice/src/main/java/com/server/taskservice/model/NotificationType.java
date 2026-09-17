@@ -1,4 +1,4 @@
-package com.server.notificationservice.entity;
+package com.server.taskservice.model;
 
 
 //Types of notifications

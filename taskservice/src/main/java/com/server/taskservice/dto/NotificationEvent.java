@@ -1,6 +1,6 @@
 package com.server.taskservice.dto;
 
-import com.server.notificationservice.entity.NotificationType;
+import com.server.taskservice.model.NotificationType;
 import lombok.*;
 
 import java.util.List;
@@ -14,15 +14,20 @@ public class NotificationEvent {
 
     // User who performed the action.
     private Long actorId;
+    private String actorName;
+    private String actorAvatar;
 
     // Workspace where the action occurred.
     private Long workspaceId;
+    private String workspaceName;
 
     // Board related to the action.
     private Long boardId;
+    private String boardName;
 
     // Card related to the action, if any.
     private Long cardId;
+    private String cardTitle;
 
     // Type of notification.
     private NotificationType type;
@@ -38,6 +43,5 @@ public class NotificationEvent {
     private List<Long> recipientIds;
 
     // If true, all members of the workspace should receive the notification.
-    private boolean notifyAllMembers;
 
 }
