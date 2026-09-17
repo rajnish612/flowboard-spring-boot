@@ -12,7 +12,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/notifications")
+@RequestMapping("/")
 @RequiredArgsConstructor
 public class NotificationController {
 
