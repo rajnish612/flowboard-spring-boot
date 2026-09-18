@@ -72,6 +72,7 @@ const LeftPanel: React.FC = () => {
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [workspaceName, setWorkspaceName] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { user } = useAuth();
 
   // function to create new workspace
@@ -113,9 +114,41 @@ const LeftPanel: React.FC = () => {
 
   return (
     <>
-      <aside className="flex h-screen w-64 min-w-[16rem] shrink-0 flex-col overflow-hidden bg-white py-4 shadow-lg">
+      {!isMobileOpen && (
+        <button
+          type="button"
+          onClick={() => setIsMobileOpen(true)}
+          className="fixed left-4 top-4 z-50 rounded-xl bg-white p-2.5 text-slate-600 shadow-lg ring-1 ring-slate-200 transition hover:bg-indigo-50 hover:text-indigo-600 md:hidden"
+          aria-label="Open workspace navigation"
+          aria-expanded={isMobileOpen}
+        >
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      )}
+
+      {isMobileOpen && (
+        <button
+          type="button"
+          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 z-30 bg-slate-950/35 backdrop-blur-[2px] md:hidden"
+          aria-label="Close workspace navigation"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex h-screen w-64 min-w-[16rem] shrink-0 flex-col overflow-hidden bg-white py-4 shadow-2xl transition-transform duration-300 md:relative md:z-auto md:flex md:translate-x-0 md:shadow-lg ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
         {/* Header */}
-        <div className="flex items-center px-4 mb-4 border-b border-gray-200 pb-4">
+        <div className="flex items-center justify-between px-4 mb-4 border-b border-gray-200 pb-4">
+          <div className="flex items-center">
           <div className="h-10 w-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white flex-shrink-0">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -138,6 +171,17 @@ const LeftPanel: React.FC = () => {
             </span>
             <span className="text-xs text-gray-400">Free</span>
           </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsMobileOpen(false)}
+            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 md:hidden"
+            aria-label="Close workspace navigation"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Nav */}
@@ -241,6 +285,7 @@ const LeftPanel: React.FC = () => {
                     <Link
                       to={`${opt.path + "/" + ws.id}`}
                       key={opt.label}
+                      onClick={() => setIsMobileOpen(false)}
                       className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors w-full text-left"
                     >
                       <svg
