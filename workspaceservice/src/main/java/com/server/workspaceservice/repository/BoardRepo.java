@@ -10,4 +10,7 @@ import java.util.List;
 @Repository
 public interface BoardRepo extends JpaRepository<Board, Long> {
     List<Board> findBoardsByWorkspaceId(Long workspaceId);
+
+    // Delete all members of a workspace
+    boolean deleteByWorkspaceId(Long workspaceId);
 }

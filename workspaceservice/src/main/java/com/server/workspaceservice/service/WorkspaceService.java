@@ -57,11 +57,14 @@ public class WorkspaceService {
     }
 
     //Method to delete workspace
+    @Transactional
     public void deleteWorkspace(Long id, Long userId) {
         boolean hasAccess = workSpaceRepo.checkIsOwner(userId, id);
         if (!hasAccess) {
             throw new AccessDeniedException("You are not the owner of this workspace");
         }
+        boardRepo.deleteByWorkspaceId(id);
+        workspaceMemberRepo.deleteByWorkspaceId(id);
         workSpaceRepo.deleteById(id);
     }
 
