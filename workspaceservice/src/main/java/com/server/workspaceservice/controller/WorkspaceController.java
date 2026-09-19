@@ -28,6 +28,14 @@ public class WorkspaceController {
         return ResponseEntity.ok(workspaceService.getWorkspaceByWorkspaceId(workspaceId));
     }
 
+    //Endpoint to fetch workspaces using workspaceIds
+    @PostMapping("/workspaces")
+    public ResponseEntity<List<WorkspaceDTO>> getWorkspacesByWorkspaceId(@RequestBody List<Long> workspaceIds) {
+
+
+        return ResponseEntity.ok(workspaceService.getWorkspacesByWorkspaceId(workspaceIds));
+    }
+
     //Endpoint to fetch workspace using boardId
     @GetMapping("/get/{boardId}")
     public ResponseEntity<WorkspaceDTO> getWorkspaceByBoardId(@PathVariable Long boardId) {
