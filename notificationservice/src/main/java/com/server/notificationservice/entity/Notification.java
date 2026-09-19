@@ -31,7 +31,6 @@ public class Notification {
 
     private Long boardId;
 
-    private Long cardId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -29,4 +29,8 @@ public interface WorkspaceClient {
     @GetMapping("/member/{workspaceId}/ids")
     List<Long> getWorkspaceMemberIds(
             @PathVariable Long workspaceId);
+
+    @PostMapping("/workspaces")
+    List<WorkspaceDTO> getWorkspacesByWorkspaceId(@RequestBody List<Long> workspaceIds);
+
 }
