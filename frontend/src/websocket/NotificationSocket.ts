@@ -11,8 +11,7 @@ export type NotificationSocketData = {
   workspaceName: string | null;
   boardId: number | null;
   boardName: string | null;
-  cardId: number | null;
-  cardTitle: string | null;
+
   type:
     | "CARD_CREATED"
     | "CARD_UPDATED"
