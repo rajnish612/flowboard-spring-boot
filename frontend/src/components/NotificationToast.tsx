@@ -14,8 +14,11 @@ const NotificationToast = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [notification, setNotification] = useState<NotificationSocketData | null>(null);
-  const [notifications, setNotifications] = useState<NotificationSocketData[]>([]);
+  const [notification, setNotification] =
+    useState<NotificationSocketData | null>(null);
+  const [notifications, setNotifications] = useState<NotificationSocketData[]>(
+    [],
+  );
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -110,103 +113,108 @@ const NotificationToast = () => {
     <>
       <div className="fixed right-3 top-3 z-100 flex items-start gap-2 sm:right-6 sm:top-5">
         {!isBoard && (
-        <div className="relative">
-        <button
-          type="button"
-          onClick={toggleNotifications}
-          className="relative rounded-xl p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-indigo-600"
-          aria-label="Open notifications"
-          aria-expanded={open}
-        >
-          <Bell size={21} aria-hidden="true" />
-          {unreadCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
-          )}
-        </button>
-
-        {open && (
-          <div className="absolute right-0 top-12 z-40 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">Notifications</h2>
-                <p className="text-xs text-slate-500">
-                  {unreadCount ? `${unreadCount} unread` : "All caught up"}
-                </p>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={markAllAsRead}
-                  disabled={unreadCount === 0}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Mark all notifications as read"
-                >
-                  <CheckCheck size={17} aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                  aria-label="Close notifications"
-                >
-                  <X size={17} aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-            <div className="max-h-96 overflow-y-auto">
-              {loading ? (
-                <div className="px-4 py-10 text-center text-sm text-slate-500">
-                  Loading notifications...
-                </div>
-              ) : visibleNotifications.length === 0 ? (
-                <div className="px-4 py-10 text-center text-sm text-slate-500">
-                  No notifications yet.
-                </div>
-              ) : (
-                visibleNotifications.map((item) => (
-                  <button
-                    type="button"
-                    key={item.id}
-                    onClick={() => openNotification(item)}
-                    className={`flex w-full gap-3 border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50 ${
-                      item.read ? "bg-white" : "bg-indigo-50/60"
-                    }`}
-                  >
-                    {item.actorAvatar ? (
-                      <img
-                        src={item.actorAvatar}
-                        alt={item.actorName ?? "User"}
-                        className="h-9 w-9 shrink-0 rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700">
-                        {item.actorName?.charAt(0).toUpperCase() ?? "?"}
-                      </span>
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-slate-800">
-                        {item.title}
-                      </span>
-                      <span className="mt-0.5 block text-sm text-slate-600">
-                        {item.message}
-                      </span>
-                      <span className="mt-1 block text-xs text-slate-400">
-                        {new Date(item.createdAt).toLocaleString()}
-                      </span>
-                    </span>
-                    {!item.read && (
-                      <Check className="mt-1 shrink-0 text-indigo-600" size={16} />
-                    )}
-                  </button>
-                ))
+          <div className="relative">
+            <button
+              type="button"
+              onClick={toggleNotifications}
+              className="relative rounded-xl p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-indigo-600"
+              aria-label="Open notifications"
+              aria-expanded={open}
+            >
+              <Bell size={21} aria-hidden="true" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
               )}
-            </div>
+            </button>
+
+            {open && (
+              <div className="absolute right-0 top-12 z-40 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-slate-900">
+                      Notifications
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      {unreadCount ? `${unreadCount} unread` : "All caught up"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={markAllAsRead}
+                      disabled={unreadCount === 0}
+                      className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Mark all notifications as read"
+                    >
+                      <CheckCheck size={17} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOpen(false)}
+                      className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                      aria-label="Close notifications"
+                    >
+                      <X size={17} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {loading ? (
+                    <div className="px-4 py-10 text-center text-sm text-slate-500">
+                      Loading notifications...
+                    </div>
+                  ) : visibleNotifications.length === 0 ? (
+                    <div className="px-4 py-10 text-center text-sm text-slate-500">
+                      No notifications yet.
+                    </div>
+                  ) : (
+                    visibleNotifications.map((item) => (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => openNotification(item)}
+                        className={`flex w-full gap-3 border-b border-slate-100 px-4 py-3 text-left transition hover:bg-slate-50 ${
+                          item.read ? "bg-white" : "bg-indigo-50/60"
+                        }`}
+                      >
+                        {item.actorAvatar ? (
+                          <img
+                            src={item.actorAvatar}
+                            alt={item.actorName ?? "User"}
+                            className="h-9 w-9 shrink-0 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700">
+                            {item.actorName?.charAt(0).toUpperCase() ?? "?"}
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold text-slate-800">
+                            {item.title}
+                          </span>
+                          <span className="mt-0.5 block text-sm text-slate-600">
+                            {item.message}
+                          </span>
+                          <span className="mt-1 block text-xs text-slate-400">
+                            {new Date(item.createdAt).toLocaleString()}
+                          </span>
+                        </span>
+                        {!item.read && (
+                          <Check
+                            className="mt-1 shrink-0 text-indigo-600"
+                            size={16}
+                          />
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
-        </div>
-      )}
 
         <div className="relative">
           <button
@@ -230,7 +238,11 @@ const NotificationToast = () => {
             <span className="hidden max-w-28 truncate text-left text-sm font-semibold text-slate-700 sm:block">
               {user.name}
             </span>
-            <ChevronDown size={16} className="text-slate-400" aria-hidden="true" />
+            <ChevronDown
+              size={16}
+              className="text-slate-400"
+              aria-hidden="true"
+            />
           </button>
 
           {profileOpen && (
@@ -250,18 +262,24 @@ const NotificationToast = () => {
                   )}
                   <div className="min-w-0">
                     <h2 className="truncate text-lg font-bold">{user.name}</h2>
-                    <p className="truncate text-sm text-violet-100">{user.email}</p>
+                    <p className="truncate text-sm text-violet-100">
+                      {user.email}
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="space-y-2 p-4">
                 <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
                   <span className="text-sm text-slate-500">Plan</span>
-                  <span className="text-sm font-semibold text-indigo-600">Free</span>
+                  <span className="text-sm font-semibold text-indigo-600">
+                    Free
+                  </span>
                 </div>
                 <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
                   <span className="text-sm text-slate-500">Account</span>
-                  <span className="text-sm font-medium text-emerald-600">Active</span>
+                  <span className="text-sm font-medium text-emerald-600">
+                    Active
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -297,8 +315,12 @@ const NotificationToast = () => {
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-slate-900">{notification.title}</p>
-              <p className="mt-1 text-sm text-slate-600">{notification.message}</p>
+              <p className="text-sm font-semibold text-slate-900">
+                {notification.title}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                {notification.message}
+              </p>
               {isDashboard && (
                 <div className="mt-2 space-y-0.5 text-xs text-slate-500">
                   {notification.actorName && (
@@ -309,7 +331,9 @@ const NotificationToast = () => {
                   )}
                   {notification.workspaceName && (
                     <p>
-                      <span className="font-medium text-slate-700">Workspace:</span>{" "}
+                      <span className="font-medium text-slate-700">
+                        Workspace:
+                      </span>{" "}
                       {notification.workspaceName}
                     </p>
                   )}
@@ -317,12 +341,6 @@ const NotificationToast = () => {
                     <p>
                       <span className="font-medium text-slate-700">Board:</span>{" "}
                       {notification.boardName}
-                    </p>
-                  )}
-                  {notification.cardTitle && (
-                    <p>
-                      <span className="font-medium text-slate-700">Card:</span>{" "}
-                      {notification.cardTitle}
                     </p>
                   )}
                 </div>
