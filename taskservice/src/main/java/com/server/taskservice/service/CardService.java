@@ -2,12 +2,12 @@ package com.server.taskservice.service;
 
 import com.server.taskservice.client.AuthClient;
 import com.server.taskservice.client.WorkspaceClient;
-import com.server.taskservice.dto.CardDTO;
-import com.server.taskservice.dto.UserDTO;
-import com.server.taskservice.dto.WorkspaceDTO;
+import com.server.taskservice.dto.*;
+import com.server.taskservice.kafka.NotificationEventPublisher;
 import com.server.taskservice.model.ActivityType;
 import com.server.taskservice.model.BoardList;
 import com.server.taskservice.model.Card;
+import com.server.taskservice.model.NotificationType;
 import com.server.taskservice.repository.BoardListRepo;
 import com.server.taskservice.repository.CardRepo;
 import jakarta.persistence.EntityNotFoundException;
@@ -33,6 +33,7 @@ public class CardService {
     private final AuthClient authClient;
     private final ActivityService activityService;
     private final WorkspaceClient workspaceClient;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     // Fetch all cards for a list, already ordered by position
     public List<CardDTO> getCardsByListId(Long listId) {
@@ -84,7 +85,10 @@ public class CardService {
                 .build();
         BoardList list = boardListRepo.findById(card.getListId())
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
+        Long boardId = list.getBoardId();
         WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+
+        BoardDTO board = getBoard(boardId);
         Card saved = cardRepo.save(card);
 
         activityService.createActivity(
@@ -96,6 +100,8 @@ public class CardService {
                 ActivityType.CARD_CREATED,
                 "Card created \"" + saved.getTitle() + "\"",
                 null);
+        notificationEventPublisher.publish(buildNotificationEvent(userId, workspace, board, NotificationType.CARD_CREATED, "Card created", "Created card \"" + saved.getTitle() + "\""));
+
         log.info("Created card '{}' at position {} in list {}", saved.getTitle(), saved.getPosition(),
                 saved.getListId());
         return toDTO(saved);
@@ -125,7 +131,7 @@ public class CardService {
         BoardList list = boardListRepo.findById(card.getListId())
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
         WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
-
+        BoardDTO board = getBoard(list.getBoardId());
         Card updated = cardRepo.save(card);
 
         if (!Objects.equals(oldAssignedTo, updated.getAssignedTo())) {
@@ -141,7 +147,7 @@ public class CardService {
                         ActivityType.CARD_UNASSIGNED,
                         "unassigned card \"" + updated.getTitle() + "\" from " + unassignedUser.getName(),
                         oldAssignedTo);
-
+                notificationEventPublisher.publish(buildNotificationEvent(userId, workspace, board, NotificationType.CARD_UNASSIGNED, "Card unassigned", "unassigned card \"" + updated.getTitle() + "\" from \"" + unassignedUser.getName() + "\""));
             } else {
 
                 UserDTO assignedUser = authClient.getProfile(updated.getAssignedTo());
@@ -158,6 +164,8 @@ public class CardService {
                                 "\" to " +
                                 assignedUser.getName(),
                         updated.getAssignedTo());
+                notificationEventPublisher.publish(buildNotificationEvent(userId, workspace, board, NotificationType.CARD_ASSIGNED, "Card assigned", "assigned card \"" + updated.getTitle() + "\" to \"" + assignedUser.getName() + "\""));
+
             }
 
         } else {
@@ -170,6 +178,8 @@ public class CardService {
                     ActivityType.CARD_UPDATED,
                     "Updated card \"" + updated.getTitle() + "\"",
                     null);
+            notificationEventPublisher.publish(buildNotificationEvent(userId, workspace, board, NotificationType.CARD_UPDATED, "Card updated", "Card updated \"" + updated.getTitle() + "\""));
+
         }
         log.info("Updated card id = {}", id);
         return toDTO(updated);
@@ -182,6 +192,7 @@ public class CardService {
 
         BoardList list = boardListRepo.findById(card.getListId())
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
+        BoardDTO board = getBoard(list.getBoardId());
         WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
         activityService.createActivity(
                 userId,
@@ -194,6 +205,8 @@ public class CardService {
                 null);
 
         cardRepo.deleteById(id);
+        notificationEventPublisher.publish(buildNotificationEvent(userId, workspace, board, NotificationType.CARD_DELETED, "Card deleted", "Card deleted \"" + card.getTitle() + "\""));
+
         log.info("Deleted card id={}", id);
     }
 
@@ -313,4 +326,37 @@ public class CardService {
 
         return builder.build();
     }
+
+
+    //Notification Event DTO builder for notifications
+    private NotificationEvent buildNotificationEvent(
+            Long userId,
+            WorkspaceDTO workspace,
+            BoardDTO board,
+            NotificationType type,
+            String title,
+            String message) {
+        UserDTO actor = authClient.getProfile(userId);
+        return NotificationEvent.builder()
+                .actorId(userId)
+                .actorName(actor.getName())
+                .actorAvatar(actor.getAvatar())
+                .workspaceId(workspace.getId())
+                .workspaceName(workspace.getName())
+                .boardId(board != null ? board.getId() : null)
+                .boardName(board != null ? board.getName() : null)
+                .type(type)
+                .title(title)
+                .message("User " + actor.getName() + " " + message)
+                .recipientIds(workspaceClient.getWorkspaceMemberIds(workspace.getId()))
+                .build();
+    }
+
+    private BoardDTO getBoard(Long boardId) {
+        return workspaceClient.getBoardsByBoardsId(List.of(boardId))
+                .stream()
+                .findFirst()
+                .orElse(null);
+    }
+
 }
