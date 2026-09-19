@@ -229,4 +229,8 @@ public class WorkspaceService {
     public List<Long> getWorkspaceMemberIds(Long workspaceId) {
         return workspaceMemberRepo.findByWorkspaceId(workspaceId).stream().map(m -> m.getUserId()).toList();
     }
+
+    public List<WorkspaceDTO> getWorkspacesByWorkspaceId(List<Long> workspaceIds) {
+        return workSpaceRepo.findByIdIn(workspaceIds).stream().map(w -> WorkspaceDTO.builder().name(w.getName()).id(w.getId()).ownerId(w.getOwnerId()).build()).toList();
+    }
 }
