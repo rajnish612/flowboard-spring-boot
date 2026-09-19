@@ -17,10 +17,10 @@ public interface WorkspaceMemberRepo extends JpaRepository<WorkspaceMembers, Lon
     //Fetch members using workspace id;
     List<WorkspaceMembers> findByWorkspaceId(Long id);
 
-        Optional<WorkspaceMembers> findByWorkspaceIdAndUserId(
+    Optional<WorkspaceMembers> findByWorkspaceIdAndUserId(
             Long workspaceId,
             Long userId
-        );
+    );
 
 
     //Check if user is a member of the workspace or not using workspaceId and userId
@@ -28,4 +28,7 @@ public interface WorkspaceMemberRepo extends JpaRepository<WorkspaceMembers, Lon
             Long workspaceId,
             Long userId
     );
+
+    // Delete all members of a workspace
+    boolean deleteByWorkspaceId(Long workspaceId);
 }
