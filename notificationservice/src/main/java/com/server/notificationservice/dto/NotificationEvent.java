@@ -25,9 +25,6 @@ public class NotificationEvent {
     private Long boardId;
     private String boardName;
 
-    // Card related to the action, if any.
-    private Long cardId;
-    private String cardTitle;
 
     // Type of notification.
     private NotificationType type;

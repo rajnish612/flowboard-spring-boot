@@ -42,11 +42,7 @@ public class NotificationDTO {
     // Populated from Workspace Service for the client.
     private String boardName;
 
-    // Related card.
-    private Long cardId;
 
-    // Populated from Task Service for the client.
-    private String cardTitle;
 
     // Type of notification.
     private NotificationType type;

@@ -14,6 +14,10 @@ import com.server.notificationservice.repository.NotificationRepository;
 import com.server.notificationservice.websocket.NotificationPublisher;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 //Service to manage notification
@@ -32,13 +36,13 @@ public class NotificationService {
 
         List<Long> recipientIds;
 
-                if (event.getRecipientIds() == null || event.getRecipientIds().isEmpty()) {
-                        throw new IllegalArgumentException(
-                                        "recipientIds is required for a Kafka notification event"
-                        );
+        if (event.getRecipientIds() == null || event.getRecipientIds().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "recipientIds is required for a Kafka notification event"
+            );
         }
 
-                recipientIds = event.getRecipientIds();
+        recipientIds = event.getRecipientIds();
 
         // Don't notify the user who performed the action.
         recipientIds = recipientIds.stream()
@@ -72,10 +76,6 @@ public class NotificationService {
                 .name(event.getBoardName())
                 .build();
 
-        CardDTO card = event.getCardId() == null ? null : CardDTO.builder()
-                .id(event.getCardId())
-                .title(event.getCardTitle())
-                .build();
 
         /*
          * Create one database notification for every recipient.
@@ -86,7 +86,6 @@ public class NotificationService {
                         .actorId(event.getActorId())
                         .workspaceId(event.getWorkspaceId())
                         .boardId(event.getBoardId())
-                        .cardId(event.getCardId())
                         .type(event.getType())
                         .title(event.getTitle())
                         .message(event.getMessage())
@@ -104,8 +103,7 @@ public class NotificationService {
                     notification,
                     actor,
                     workspace,
-                    board,
-                    card
+                    board
             );
 
             notificationPublisher.publish(
@@ -119,10 +117,86 @@ public class NotificationService {
     // Get all notifications of the authenticated user.
     public List<NotificationDTO> getNotifications(Long userId) {
 
-        return notificationRepository
-                .findByRecipientIdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(this::toPopulatedDTO)
+        //Get notifications
+        List<Notification> notifications = notificationRepository
+                .findByRecipientIdOrderByCreatedAtDesc(userId);
+        if (notifications.isEmpty()) {
+            return List.of();
+        }
+
+        // 2. Extract IDs, ignoring nulls and duplicates
+        List<Long> workspaceIds = notifications.stream().map(Notification::getWorkspaceId).filter(Objects::nonNull)
+                .distinct().toList();
+        List<Long> actorIds = notifications.stream().map(Notification::getActorId).filter(Objects::nonNull)
+                .distinct().toList();
+        List<Long> boardIds = notifications.stream().map(Notification::getBoardId).filter(Objects::nonNull)
+                .distinct().toList();
+
+
+        // 3. Fetch related data
+        List<WorkspaceDTO> workspaces = workspaceIds.isEmpty()
+                ? List.of()
+                : workspaceClient.getWorkspacesByWorkspaceId(workspaceIds);
+
+        List<UserDTO> actors = actorIds.isEmpty()
+                ? List.of()
+                : authClient.getUsersByUserId(actorIds);
+
+        List<BoardDTO> boards = boardIds.isEmpty()
+                ? List.of()
+                : workspaceClient.getBoardsByBoardsId(boardIds);
+
+
+
+
+        // 4. Convert lists into maps for fast lookup by ID
+        Map<Long, WorkspaceDTO> workspaceMap = workspaces.stream()
+                .collect(Collectors.toMap(
+                        WorkspaceDTO::getId,
+                        Function.identity()
+                ));
+
+        Map<Long, UserDTO> actorMap = actors.stream()
+                .collect(Collectors.toMap(
+                        UserDTO::getId,
+                        Function.identity()
+                ));
+
+        Map<Long, BoardDTO> boardMap = boards.stream()
+                .collect(Collectors.toMap(
+                        BoardDTO::getId,
+                        Function.identity()
+                ));
+
+
+
+        // 5. Build NotificationDTOs
+        return notifications.stream()
+                .filter(notification ->
+                        notification.getWorkspaceId() != null
+                                && notification.getBoardId() != null
+                                && workspaceMap.containsKey(notification.getWorkspaceId())
+                                && boardMap.containsKey(notification.getBoardId())
+                )
+                .map(notification -> {
+
+                    WorkspaceDTO workspace =
+                            workspaceMap.get(notification.getWorkspaceId());
+
+                    UserDTO actor =
+                            actorMap.get(notification.getActorId());
+
+                    BoardDTO board =
+                            boardMap.get(notification.getBoardId());
+
+
+                    return toDTO(
+                            notification,
+                            actor,
+                            workspace,
+                            board
+                            );
+                })
                 .toList();
     }
 
@@ -130,11 +204,7 @@ public class NotificationService {
     // Get only unread notifications of the authenticated user.
     public List<NotificationDTO> getUnreadNotifications(Long userId) {
 
-        return notificationRepository
-                .findByRecipientIdAndReadFalseOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(this::toPopulatedDTO)
-                .toList();
+        return List.of();
     }
 
 
@@ -177,8 +247,7 @@ public class NotificationService {
             Notification notification,
             UserDTO actor,
             WorkspaceDTO workspace,
-            BoardDTO board,
-            CardDTO card
+            BoardDTO board
     ) {
 
         return NotificationDTO.builder()
@@ -204,12 +273,6 @@ public class NotificationService {
                                 : null
                 )
 
-                .cardId(notification.getCardId())
-                .cardTitle(
-                        card != null
-                                ? card.getTitle()
-                                : null
-                )
 
                 .type(notification.getType())
                 .title(notification.getTitle())
@@ -221,49 +284,4 @@ public class NotificationService {
     }
 
 
-    // Populate a notification when loading notification history.
-    private NotificationDTO toPopulatedDTO(
-            Notification notification
-    ) {
-
-        UserDTO actor =
-                authClient.getUser(notification.getActorId());
-
-        WorkspaceDTO workspace = null;
-
-        if (notification.getWorkspaceId() != null) {
-            workspace = workspaceClient.getWorkspaceByWorkspaceId(
-                    notification.getWorkspaceId()
-            );
-        }
-
-        BoardDTO board = null;
-
-        if (notification.getBoardId() != null) {
-
-            board = workspaceClient
-                    .getBoardsByBoardsId(
-                            List.of(notification.getBoardId())
-                    )
-                    .stream()
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        CardDTO card = null;
-
-        if (notification.getCardId() != null) {
-            card = taskClient.getCardById(
-                    notification.getCardId()
-            );
-        }
-
-        return toDTO(
-                notification,
-                actor,
-                workspace,
-                board,
-                card
-        );
-    }
 }
