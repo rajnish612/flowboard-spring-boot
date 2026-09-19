@@ -69,13 +69,16 @@ const LeftPanel: React.FC = () => {
   const [fetchingWorkspaces, setFetchingWorkspaces] = useState<boolean>(true);
   const [workspaces, setWorkspaces] = useState<WorkSpace[]>(initialWorkspaces);
   const [activeView, setActiveView] = useState<WorkspaceView>("mine");
+  const [creatingWorkspace, setCreatingWorkspace] = useState<boolean>(false);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [workspaceName, setWorkspaceName] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { user } = useAuth();
 
   // function to create new workspace
   const createWorkspace = async () => {
+    setCreatingWorkspace(true);
     if (!workspaceName || !user) return;
     const newWorkspace: WorkSpace = {
       ownerId: user?.id,
@@ -86,6 +89,8 @@ const LeftPanel: React.FC = () => {
       setWorkspaces((prev) => [...prev, res.data]);
     } catch {
       // The interceptor displays the request error to the user.
+    } finally {
+      setCreatingWorkspace(false);
     }
   };
   const toggleDropdown = (id?: number) => {
@@ -113,31 +118,88 @@ const LeftPanel: React.FC = () => {
 
   return (
     <>
-      <aside className="flex h-screen w-64 min-w-[16rem] shrink-0 flex-col overflow-hidden bg-white py-4 shadow-lg">
+      {!isMobileOpen && (
+        <button
+          type="button"
+          onClick={() => setIsMobileOpen(true)}
+          className="fixed left-4 top-4 z-50 rounded-xl bg-white p-2.5 text-slate-600 shadow-lg ring-1 ring-slate-200 transition hover:bg-indigo-50 hover:text-indigo-600 md:hidden"
+          aria-label="Open workspace navigation"
+          aria-expanded={isMobileOpen}
+        >
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </button>
+      )}
+
+      {isMobileOpen && (
+        <button
+          type="button"
+          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 z-30 bg-slate-950/35 backdrop-blur-[2px] md:hidden"
+          aria-label="Close workspace navigation"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex h-screen w-64 min-w-[16rem] shrink-0 flex-col overflow-hidden bg-white py-4 shadow-2xl transition-transform duration-300 md:relative md:z-auto md:flex md:translate-x-0 md:shadow-lg ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+      >
         {/* Header */}
-        <div className="flex items-center px-4 mb-4 border-b border-gray-200 pb-4">
-          <div className="h-10 w-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white flex-shrink-0">
+        <div className="flex items-center justify-between px-4 mb-4 border-b border-gray-200 pb-4">
+          <div className="flex items-center">
+            <div className="h-10 w-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white flex-shrink-0">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.8}
+                  d="M4 7.5A2.5 2.5 0 016.5 5h3l1.6 2h6.4A2.5 2.5 0 0120 9.5v7A2.5 2.5 0 0117.5 19h-11A2.5 2.5 0 014 16.5v-9z"
+                />
+              </svg>
+            </div>
+            <div className="ml-3 flex flex-col">
+              <span className="font-semibold text-gray-800 text-sm">
+                Flowboard
+              </span>
+              <span className="text-xs text-gray-400">Free</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsMobileOpen(false)}
+            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 md:hidden"
+            aria-label="Close workspace navigation"
+          >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
+              className="h-5 w-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              strokeWidth={2}
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={1.8}
-                d="M4 7.5A2.5 2.5 0 016.5 5h3l1.6 2h6.4A2.5 2.5 0 0120 9.5v7A2.5 2.5 0 0117.5 19h-11A2.5 2.5 0 014 16.5v-9z"
+                d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-          </div>
-          <div className="ml-3 flex flex-col">
-            <span className="font-semibold text-gray-800 text-sm">
-              Flowboard
-            </span>
-            <span className="text-xs text-gray-400">Free</span>
-          </div>
+          </button>
         </div>
 
         {/* Nav */}
@@ -179,7 +241,10 @@ const LeftPanel: React.FC = () => {
 
           {/* Workspace list */}
           {fetchingWorkspaces ? (
-            <div className="space-y-2 px-2 py-1" aria-label="Loading workspaces">
+            <div
+              className="space-y-2 px-2 py-1"
+              aria-label="Loading workspaces"
+            >
               {[0, 1, 2].map((item) => (
                 <div
                   key={item}
@@ -195,74 +260,75 @@ const LeftPanel: React.FC = () => {
             </div>
           ) : (
             workspaces.map((ws) => (
-            <div key={ws.id} className="rounded-lg overflow-hidden">
-              {/* Workspace row */}
-              <button
-                onClick={() => toggleDropdown(ws.id)}
-                className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors group"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  {/* Workspace avatar */}
-                  <div
-                    className={`h-7 w-7 rounded-md bg-violet-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}
-                  >
-                    {ws.name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="flex min-w-0 flex-col items-start">
-                    <span className="max-w-40 truncate text-sm font-semibold text-gray-700">
-                      {ws.name}
-                    </span>
-                    <span className="text-[11px] font-medium text-gray-400">
-                      {activeView === "mine" ? "Owner" : "Shared with you"}
-                    </span>
-                  </span>
-                </div>
-                {/* Chevron arrow */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={`h-4 w-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${openDropdownId === ws.id ? "rotate-180" : ""}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+              <div key={ws.id} className="rounded-lg overflow-hidden">
+                {/* Workspace row */}
+                <button
+                  onClick={() => toggleDropdown(ws.id)}
+                  className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors group"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-
-              {/* Dropdown options */}
-              {openDropdownId === ws.id && (
-                <div className="ml-9 mt-0.5 flex flex-col space-y-0.5">
-                  {dropdownOptions.map((opt) => (
-                    <Link
-                      to={`${opt.path + "/" + ws.id}`}
-                      key={opt.label}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors w-full text-left"
+                  <div className="flex items-center gap-2 min-w-0">
+                    {/* Workspace avatar */}
+                    <div
+                      className={`h-7 w-7 rounded-md bg-violet-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4 flex-shrink-0"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                      {ws.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="flex min-w-0 flex-col items-start">
+                      <span className="max-w-40 truncate text-sm font-semibold text-gray-700">
+                        {ws.name}
+                      </span>
+                      <span className="text-[11px] font-medium text-gray-400">
+                        {activeView === "mine" ? "Owner" : "Shared with you"}
+                      </span>
+                    </span>
+                  </div>
+                  {/* Chevron arrow */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className={`h-4 w-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${openDropdownId === ws.id ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {/* Dropdown options */}
+                {openDropdownId === ws.id && (
+                  <div className="ml-9 mt-0.5 flex flex-col space-y-0.5">
+                    {dropdownOptions.map((opt) => (
+                      <Link
+                        to={`${opt.path + "/" + ws.id}`}
+                        key={opt.label}
+                        onClick={() => setIsMobileOpen(false)}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors w-full text-left"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d={opt.icon}
-                        />
-                      </svg>
-                      <span>{opt.label}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 flex-shrink-0"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d={opt.icon}
+                          />
+                        </svg>
+                        <span>{opt.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))
           )}
         </nav>
@@ -313,9 +379,31 @@ const LeftPanel: React.FC = () => {
               <button
                 onClick={createWorkspace}
                 disabled={!workspaceName.trim()}
-                className="px-5 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
               >
-                Create
+                {creatingWorkspace && (
+                  <svg
+                    className="h-4 w-4 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-90"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
+                  </svg>
+                )}
+                {creatingWorkspace ? "Creating..." : "Create"}
               </button>
             </div>
           </div>

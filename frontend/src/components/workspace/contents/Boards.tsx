@@ -17,8 +17,6 @@ type Board = {
 };
 
 const BoardCard: React.FC<Board> = ({ backgroundImage, name, description }) => {
-  console.log("description", description);
-
   return (
     <div
       style={
@@ -159,7 +157,10 @@ const Boards: React.FC = () => {
     } catch (err: unknown) {
       setCreateError(true);
       if (isAxiosError(err)) {
-        console.error("Unable to create board:", err.response?.data?.message || err.message);
+        console.error(
+          "Unable to create board:",
+          err.response?.data?.message || err.message,
+        );
       }
     } finally {
       setCreating(false);
@@ -200,10 +201,14 @@ const Boards: React.FC = () => {
       </div>
 
       {loadError && (
-        <p className="text-sm text-red-600">Unable to load boards. Please refresh and try again.</p>
+        <p className="text-sm text-red-600">
+          Unable to load boards. Please refresh and try again.
+        </p>
       )}
       {createError && (
-        <p className="text-sm text-red-600">Unable to create the board. Please try again.</p>
+        <p className="text-sm text-red-600">
+          Unable to create the board. Please try again.
+        </p>
       )}
 
       {/* Board grid */}

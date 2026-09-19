@@ -81,8 +81,16 @@ public class BoardService {
                 .workspaceId(boardDTO.getWorkspaceId())
                 .build();
 
-        boardRepo.save(newBoard);
-        return boardDTO;
+        Board boardCreated = boardRepo.save(newBoard);
+
+        return BoardDTO.builder()
+                .id(boardCreated.getId())
+                .name(boardCreated.getName())
+                .description(boardCreated.getDescription())
+                .backgroundImage(boardCreated.getBackgroundImage())
+                .workspaceId(boardCreated.getWorkspaceId())
+                .build();
+
 
     }
 
