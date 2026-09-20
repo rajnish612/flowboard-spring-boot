@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
@@ -26,6 +27,8 @@ public class AuthController {
 
     private final UserRepo userRepo;
     private final UserService userService;
+    @Value("${app.cookie.secure}")
+    private boolean cookieSecure;
 
     //Endpoint to fetch user profile from the db using user's id
     @GetMapping("/profile")
@@ -78,7 +81,7 @@ public class AuthController {
 
         Cookie cookie = new Cookie("AUTH_TOKEN", null);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true); // false locally if you're using plain HTTP
+        cookie.setSecure(cookieSecure); // false locally if you're using plain HTTP
         cookie.setPath("/");
         cookie.setMaxAge(0);
 
