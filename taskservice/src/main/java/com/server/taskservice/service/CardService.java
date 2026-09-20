@@ -222,6 +222,7 @@ public class CardService {
         BoardList targetList = boardListRepo.findById(targetListId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Target list not found: " + targetListId));
+        BoardDTO board = getBoard(targetList.getBoardId());
         BoardList sourceList = boardListRepo.findById(sourceListId).orElseThrow(
                 () -> new EntityNotFoundException("Source list not found: " + sourceListId));
         boolean isSameList = sourceListId.equals(targetListId);
@@ -297,6 +298,8 @@ public class CardService {
                 ActivityType.CARD_MOVED,
                 message,
                 null);
+        notificationEventPublisher.publish(buildNotificationEvent(userId, workspace, board, NotificationType.CARD_ASSIGNED, "Card moved", message));
+
         log.info("Moved card id={} to list {} at position {}", cardId, targetListId, newPosition);
         return toDTO(moved);
     }
