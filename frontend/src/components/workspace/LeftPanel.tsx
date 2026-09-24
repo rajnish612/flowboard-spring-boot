@@ -2,6 +2,7 @@
 import { useAuth } from "../../hooks/UseAuth";
 import { axiosIns } from "../../utils/axiosInstance";
 import { Link } from "react-router";
+import { LogOut } from "lucide-react";
 
 type WorkspaceView = "mine" | "shared";
 type WorkspaceToggleProps = {
@@ -9,25 +10,53 @@ type WorkspaceToggleProps = {
   onChange: (view: WorkspaceView) => void;
 };
 const WorkspaceToggle = ({ activeView, onChange }: WorkspaceToggleProps) => {
+  const isShared = activeView === "shared";
   return (
-    <div className="flex p-1 bg-gray-100 rounded-lg">
-      {" "}
+    <div className="relative mb-3 grid grid-cols-2 rounded-xl bg-slate-100 p-1 ring-1 ring-inset ring-slate-200/80">
+      <span
+        aria-hidden="true"
+        className={`absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-lg bg-indigo-600 shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.2,0.64,1)] motion-reduce:transition-none ${isShared ? "translate-x-full" : "translate-x-0"}`}
+      />
       <button
         type="button"
         onClick={() => onChange("mine")}
-        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${activeView === "mine" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+        className={`relative z-10 flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[12.5px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${activeView === "mine" ? "text-white" : "text-slate-500 hover:text-slate-800"}`}
       >
-        {" "}
-        My Workspaces{" "}
-      </button>{" "}
+        <svg
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          className="h-3.5 w-3.5 shrink-0"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="6" height="6" rx="1.5" />
+          <rect x="11" y="3" width="6" height="6" rx="1.5" />
+          <rect x="3" y="11" width="6" height="6" rx="1.5" />
+          <rect x="11" y="11" width="6" height="6" rx="1.5" />
+        </svg>
+        My Workspaces
+      </button>
       <button
         type="button"
         onClick={() => onChange("shared")}
-        className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${activeView === "shared" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+        className={`relative z-10 flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[12.5px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${activeView === "shared" ? "text-white" : "text-slate-500 hover:text-slate-800"}`}
       >
-        {" "}
-        Shared With Me{" "}
-      </button>{" "}
+        <svg
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          className="h-3.5 w-3.5 shrink-0"
+          aria-hidden="true"
+        >
+          <circle cx="7.5" cy="7" r="2.75" />
+          <path d="M2.5 16.5c0-2.6 2.2-4.5 5-4.5s5 1.9 5 4.5" />
+          <path d="M13 4.6a2.75 2.75 0 0 1 0 4.8M15.5 12.5c1.3.7 2 1.9 2 4" />
+        </svg>
+        Shared With Me
+      </button>
     </div>
   );
 };
@@ -74,9 +103,8 @@ const LeftPanel: React.FC = () => {
   const [workspaceName, setWorkspaceName] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
-  // function to create new workspace
   const createWorkspace = async () => {
     setCreatingWorkspace(true);
     if (!workspaceName || !user) return;
@@ -93,12 +121,12 @@ const LeftPanel: React.FC = () => {
       setCreatingWorkspace(false);
     }
   };
+
   const toggleDropdown = (id?: number) => {
     if (!id) return;
     setOpenDropdownId((prev) => (prev === id ? null : id));
   };
 
-  //Function to load initial workspaces
   React.useEffect(() => {
     const fetchWorkspaces = async () => {
       const fetchWorkspacesApi =
@@ -152,38 +180,46 @@ const LeftPanel: React.FC = () => {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex h-screen w-64 min-w-[16rem] shrink-0 flex-col overflow-hidden bg-white py-4 shadow-2xl transition-transform duration-300 md:relative md:z-auto md:flex md:translate-x-0 md:shadow-lg ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 flex h-screen w-64 min-w-[16rem] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white py-4 shadow-2xl transition-transform duration-300 md:relative md:z-auto md:flex md:translate-x-0 md:shadow-none ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 mb-4 border-b border-gray-200 pb-4">
-          <div className="flex items-center">
-            <div className="h-10 w-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white flex-shrink-0">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+        <div className="flex items-center justify-between px-4 mb-4 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-shrink-0">
+              <div className="h-9 w-9 rounded-xl bg-indigo-600 flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-[18px] w-[18px]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="white"
                   strokeWidth={1.8}
-                  d="M4 7.5A2.5 2.5 0 016.5 5h3l1.6 2h6.4A2.5 2.5 0 0120 9.5v7A2.5 2.5 0 0117.5 19h-11A2.5 2.5 0 014 16.5v-9z"
-                />
-              </svg>
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 7.5A2.5 2.5 0 016.5 5h3l1.6 2h6.4A2.5 2.5 0 0120 9.5v7A2.5 2.5 0 0117.5 19h-11A2.5 2.5 0 014 16.5v-9z"
+                  />
+                </svg>
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white" />
             </div>
-            <div className="ml-3 flex flex-col">
-              <span className="font-semibold text-gray-800 text-sm">
+            <div className="flex flex-col gap-0.5 leading-none">
+              <span className="text-sm font-medium tracking-tight text-slate-900">
                 Flowboard
               </span>
-              <span className="text-xs text-gray-400">Free</span>
+              <div className="flex items-center gap-1.5">
+                <span className="rounded px-1.5 py-px text-[10px] font-medium bg-indigo-50 text-indigo-700">
+                  Free
+                </span>
+                <span className="text-[11px] text-slate-400">· Upgrade</span>
+              </div>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setIsMobileOpen(false)}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 md:hidden"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 md:hidden"
             aria-label="Close workspace navigation"
           >
             <svg
@@ -204,26 +240,25 @@ const LeftPanel: React.FC = () => {
 
         {/* Nav */}
         <nav className="px-3 space-y-1 flex-1 overflow-y-auto">
-          {/* Toggle workspaces between myWorkspaces and shared workspaces */}
           <WorkspaceToggle
             activeView={activeView}
             onChange={(currentView) => setActiveView(currentView)}
           />
+
           {/* Workspace section header */}
           <div className="flex items-center justify-between px-2 py-1 mb-1">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-widest">
               Workspaces
             </span>
-            {/* Plus icon — adds a new workspace */}
             {activeView == "mine" && (
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="p-0.5 rounded hover:bg-indigo-100 transition-colors"
+                className="group p-1 rounded-md hover:bg-slate-100 transition-colors"
                 title="Create workspace"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 text-gray-400 hover:text-indigo-600"
+                  className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -242,18 +277,18 @@ const LeftPanel: React.FC = () => {
           {/* Workspace list */}
           {fetchingWorkspaces ? (
             <div
-              className="space-y-2 px-2 py-1"
+              className="space-y-1 px-1 py-1"
               aria-label="Loading workspaces"
             >
               {[0, 1, 2].map((item) => (
                 <div
                   key={item}
-                  className="flex animate-pulse items-center gap-2 rounded-lg px-2 py-2"
+                  className="flex animate-pulse items-center gap-2.5 rounded-lg px-2 py-2"
                 >
-                  <div className="h-7 w-7 shrink-0 rounded-md bg-gray-200" />
+                  <div className="h-8 w-8 shrink-0 rounded-lg bg-slate-100" />
                   <div className="min-w-0 flex-1 space-y-1.5">
-                    <div className="h-3 w-28 rounded bg-gray-200" />
-                    <div className="h-2.5 w-20 rounded bg-gray-100" />
+                    <div className="h-3 w-28 rounded-full bg-slate-100" />
+                    <div className="h-2.5 w-20 rounded-full bg-slate-100/80" />
                   </div>
                 </div>
               ))}
@@ -261,31 +296,26 @@ const LeftPanel: React.FC = () => {
           ) : (
             workspaces.map((ws) => (
               <div key={ws.id} className="rounded-lg overflow-hidden">
-                {/* Workspace row */}
                 <button
                   onClick={() => toggleDropdown(ws.id)}
-                  className="w-full flex items-center justify-between px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors group"
+                  className={`w-full flex items-center justify-between px-2 py-2 rounded-lg transition-colors group ${openDropdownId === ws.id ? "bg-slate-50" : "hover:bg-slate-50"}`}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    {/* Workspace avatar */}
-                    <div
-                      className={`h-7 w-7 rounded-md bg-violet-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}
-                    >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="h-8 w-8 rounded-lg bg-indigo-50 ring-1 ring-inset ring-indigo-100 flex items-center justify-center text-indigo-700 text-xs font-semibold flex-shrink-0">
                       {ws.name.charAt(0).toUpperCase()}
                     </div>
-                    <span className="flex min-w-0 flex-col items-start">
-                      <span className="max-w-40 truncate text-sm font-semibold text-gray-700">
+                    <span className="flex min-w-0 flex-col items-start leading-tight">
+                      <span className="max-w-40 truncate text-[13px] font-medium text-slate-800">
                         {ws.name}
                       </span>
-                      <span className="text-[11px] font-medium text-gray-400">
+                      <span className="text-[11px] text-slate-400">
                         {activeView === "mine" ? "Owner" : "Shared with you"}
                       </span>
                     </span>
                   </div>
-                  {/* Chevron arrow */}
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className={`h-4 w-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${openDropdownId === ws.id ? "rotate-180" : ""}`}
+                    className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 flex-shrink-0 group-hover:text-slate-600 ${openDropdownId === ws.id ? "rotate-180" : ""}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -299,19 +329,18 @@ const LeftPanel: React.FC = () => {
                   </svg>
                 </button>
 
-                {/* Dropdown options */}
                 {openDropdownId === ws.id && (
-                  <div className="ml-9 mt-0.5 flex flex-col space-y-0.5">
+                  <div className="ml-6 mt-0.5 mb-1 flex flex-col space-y-0.5 border-l border-slate-200 pl-2">
                     {dropdownOptions.map((opt) => (
                       <Link
                         to={`${opt.path + "/" + ws.id}`}
                         key={opt.label}
                         onClick={() => setIsMobileOpen(false)}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors w-full text-left"
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[12.5px] text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors w-full text-left"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 flex-shrink-0"
+                          className="h-3.5 w-3.5 flex-shrink-0"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -319,7 +348,7 @@ const LeftPanel: React.FC = () => {
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            strokeWidth={2}
+                            strokeWidth={1.75}
                             d={opt.icon}
                           />
                         </svg>
@@ -332,16 +361,50 @@ const LeftPanel: React.FC = () => {
             ))
           )}
         </nav>
+
+        {/* User profile button */}
+        <div className="shrink-0 px-3 pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            className="flex w-full items-center gap-2.5 rounded-xl p-2 transition-colors hover:bg-slate-50"
+            aria-label="Open user profile"
+          >
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="h-8 w-8 rounded-lg object-cover"
+              />
+            ) : (
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-violet-500 to-indigo-600 text-xs font-bold text-white shrink-0">
+                {user?.name?.charAt(0).toUpperCase()}
+              </span>
+            )}
+            <div className="min-w-0 w-full flex-col flex leading-tight">
+              <span className="truncate text-left text-[13px] font-medium text-slate-800">
+                {user?.name}
+              </span>
+              <span className="truncate text-left text-[11px] text-slate-400">
+                {user?.email}
+              </span>
+            </div>
+            <LogOut
+              onClick={logout}
+              className="h-4 w-4 shrink-0 text-slate-400 hover:text-slate-700 transition-colors"
+            />
+          </button>
+        </div>
       </aside>
+
       {/* Create Workspace Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-md mx-4 rounded-2xl bg-white shadow-2xl p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm">
+          <div className="w-full max-w-md mx-4 rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 p-6">
             <div className="mb-5">
-              <h2 className="text-xl font-bold text-gray-800">
+              <h2 className="text-base font-semibold text-slate-900">
                 Create Workspace
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-slate-500 mt-1">
                 Give your workspace a name to get started.
               </p>
             </div>
@@ -351,10 +414,7 @@ const LeftPanel: React.FC = () => {
               value={workspaceName}
               onChange={(e) => setWorkspaceName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  createWorkspace();
-                }
-
+                if (e.key === "Enter") createWorkspace();
                 if (e.key === "Escape") {
                   setWorkspaceName("");
                   setIsCreateModalOpen(false);
@@ -362,24 +422,23 @@ const LeftPanel: React.FC = () => {
               }}
               placeholder="Workspace name"
               autoFocus
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500"
             />
 
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex justify-end gap-2 mt-5">
               <button
                 onClick={() => {
                   setWorkspaceName("");
                   setIsCreateModalOpen(false);
                 }}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
               >
                 Cancel
               </button>
-
               <button
                 onClick={createWorkspace}
                 disabled={!workspaceName.trim()}
-                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
               >
                 {creatingWorkspace && (
                   <svg

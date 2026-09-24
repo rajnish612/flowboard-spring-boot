@@ -24,30 +24,34 @@ const BoardCard: React.FC<Board> = ({ backgroundImage, name, description }) => {
           ? { backgroundImage: `url(${backgroundImage})` }
           : undefined
       }
-      className={`relative w-52 h-32 rounded-xl ${
+      className={`group relative h-32 w-52 cursor-pointer overflow-hidden rounded-2xl ring-1 ring-inset ring-white/15 shadow-sm shadow-slate-900/10 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-900/20 ${
         backgroundImage
           ? "bg-cover bg-center"
-          : "bg-gradient-to-br from-indigo-500 via-purple-500 to-violet-600"
-      } cursor-pointer shadow-md hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-hidden group`}
+          : "bg-linear-to-br from-indigo-500 to-violet-600"
+      }`}
     >
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-all duration-200" />
+      <div className="absolute inset-0 bg-linear-to-b from-black/50 via-black/10 to-black/5 transition-opacity duration-300 group-hover:from-black/60" />
 
       {/* Board title */}
-      <span className="absolute top-3 left-3 right-3 z-10 text-white font-semibold text-sm drop-shadow-md truncate">
+      <span className="absolute left-3.5 right-9 top-3.5 z-10 truncate text-sm font-semibold tracking-tight text-white">
         {name}
       </span>
 
       {/* Board description */}
-      <span className="absolute top-9 left-3 right-3 z-10 text-white/80 text-xs leading-4 line-clamp-2 drop-shadow-md">
+      <span className="absolute left-3.5 right-3.5 top-9 z-10 line-clamp-2 text-xs leading-4 text-white/75">
         {description || "No description available"}
       </span>
 
       {/* Star icon */}
-      <button className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <button
+        type="button"
+        aria-label="Star board"
+        className="absolute right-2.5 top-2.5 z-10 rounded-full bg-black/20 p-1.5 opacity-0 backdrop-blur-sm transition-all duration-200 hover:bg-black/40 focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white group-hover:opacity-100"
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-4 w-4 text-white/80 hover:text-yellow-300"
+          className="h-3.5 w-3.5 text-white/85 transition-colors hover:text-yellow-300"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"

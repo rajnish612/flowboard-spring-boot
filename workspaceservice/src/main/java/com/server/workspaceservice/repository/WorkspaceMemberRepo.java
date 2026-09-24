@@ -30,5 +30,5 @@ public interface WorkspaceMemberRepo extends JpaRepository<WorkspaceMembers, Lon
     );
 
     // Delete all members of a workspace
-    boolean deleteByWorkspaceId(Long workspaceId);
+    void deleteByWorkspaceId(Long workspaceId);
 }

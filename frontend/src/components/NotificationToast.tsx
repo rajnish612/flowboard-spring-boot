@@ -13,14 +13,13 @@ const NOTIFICATIONS_BASE = "/api/notifications";
 const NotificationToast = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [notification, setNotification] =
     useState<NotificationSocketData | null>(null);
   const [notifications, setNotifications] = useState<NotificationSocketData[]>(
     [],
   );
   const [open, setOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const isDashboard = pathname.startsWith("/dashboard");
@@ -111,7 +110,7 @@ const NotificationToast = () => {
 
   return (
     <>
-      <div className="fixed right-3 top-3 z-100 flex items-start gap-2 sm:right-6 sm:top-5">
+      <div className="ml-auto   flex items-start gap-2 ">
         {!isBoard && (
           <div className="relative">
             <button
@@ -215,84 +214,6 @@ const NotificationToast = () => {
             )}
           </div>
         )}
-
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setProfileOpen((current) => !current)}
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white/95 py-1.5 pl-1.5 pr-2.5 shadow-lg backdrop-blur-md transition hover:border-indigo-200 hover:shadow-xl"
-            aria-label="Open user profile"
-            aria-expanded={profileOpen}
-          >
-            {user.avatar ? (
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="h-9 w-9 rounded-lg object-cover"
-              />
-            ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-linear-to-br from-violet-500 to-indigo-600 text-sm font-bold text-white">
-                {user.name?.charAt(0).toUpperCase()}
-              </span>
-            )}
-            <span className="hidden max-w-28 truncate text-left text-sm font-semibold text-slate-700 sm:block">
-              {user.name}
-            </span>
-            <ChevronDown
-              size={16}
-              className="text-slate-400"
-              aria-hidden="true"
-            />
-          </button>
-
-          {profileOpen && (
-            <div className="absolute right-0 top-12 w-72 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-              <div className="bg-linear-to-br from-violet-600 to-indigo-600 px-5 py-5 text-white">
-                <div className="flex items-center gap-4">
-                  {user.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt={user.name}
-                      className="h-14 w-14 rounded-full object-cover border-4 border-white/30 shadow-md"
-                    />
-                  ) : (
-                    <span className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-white/30 bg-white/20 text-xl font-bold">
-                      {user.name?.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                  <div className="min-w-0">
-                    <h2 className="truncate text-lg font-bold">{user.name}</h2>
-                    <p className="truncate text-sm text-violet-100">
-                      {user.email}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2 p-4">
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
-                  <span className="text-sm text-slate-500">Plan</span>
-                  <span className="text-sm font-semibold text-indigo-600">
-                    Free
-                  </span>
-                </div>
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
-                  <span className="text-sm text-slate-500">Account</span>
-                  <span className="text-sm font-medium text-emerald-600">
-                    Active
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
-                >
-                  <LogOut size={16} aria-hidden="true" />
-                  Logout
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {notification && (

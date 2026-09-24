@@ -16,7 +16,7 @@ const App = () => {
     <BrowserRouter>
       <ApiErrorProvider>
         <AuthProvider>
-        <NotificationToast />
+        {/* <NotificationToast /> */}
         <Routes>
           {/* Login page route */}
           <Route path="/" element={<Login />} />

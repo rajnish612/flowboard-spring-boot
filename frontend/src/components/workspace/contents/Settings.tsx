@@ -89,102 +89,104 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl">
-      {/* Page heading */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Workspace Settings</h1>
-
-        <p className="mt-1 text-sm text-gray-500">
-          Manage the basic settings of this workspace.
+   <div className="max-w-3xl">
+  {/* Page heading */}
+  <div className="mb-8">
+    <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+      Workspace Settings
+    </h1>
+ 
+    <p className="mt-1 text-sm text-slate-500">
+      Manage the basic settings of this workspace.
+    </p>
+  </div>
+ 
+  {/* General settings */}
+  <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5">
+    <div className="border-b border-slate-100 bg-slate-50/60 px-6 py-4">
+      <h2 className="text-[15px] font-semibold text-slate-900">General</h2>
+ 
+      <p className="mt-0.5 text-sm text-slate-500">
+        Update your workspace name.
+      </p>
+    </div>
+ 
+    <div className="px-6 py-6">
+      <label
+        htmlFor="workspace-name"
+        className="mb-2 block text-[13px] font-medium text-slate-700"
+      >
+        Workspace name
+      </label>
+ 
+      <input
+        id="workspace-name"
+        type="text"
+        value={workspace?.name}
+        onChange={(e) => {
+          if (workspace) {
+            setWorkspace({
+              ...workspace,
+              name: e.target.value,
+            });
+          }
+          setError("");
+          setMessage("");
+        }}
+        placeholder="Enter workspace name"
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+      />
+ 
+      {error && <p className="mt-2 text-sm text-rose-600">{error}</p>}
+ 
+      {message && <p className="mt-2 text-sm text-emerald-600">{message}</p>}
+ 
+      <div className="mt-6 flex justify-end border-t border-slate-100 pt-5">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || !workspace?.name.trim()}
+          className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/25 transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+        >
+          {saving ? "Saving..." : "Save changes"}
+        </button>
+      </div>
+    </div>
+  </section>
+ 
+  {/* Danger zone */}
+  <section className="mt-8 overflow-hidden rounded-2xl border border-rose-200/80 bg-white shadow-sm shadow-slate-900/5">
+    <div className="border-b border-rose-100 bg-rose-50/50 px-6 py-4">
+      <h2 className="text-[15px] font-semibold text-rose-600">Danger Zone</h2>
+ 
+      <p className="mt-0.5 text-sm text-slate-500">
+        These actions can permanently affect this workspace.
+      </p>
+    </div>
+ 
+    <div className="flex items-center justify-between gap-6 px-6 py-6">
+      <div>
+        <h3 className="text-sm font-semibold text-slate-900">
+          Delete workspace
+        </h3>
+ 
+        <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
+          Permanently delete this workspace and its associated boards, lists,
+          and cards. This action cannot be undone.
         </p>
       </div>
-
-      {/* General settings */}
-      <section className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-100 px-6 py-5">
-          <h2 className="text-lg font-semibold text-gray-800">General</h2>
-
-          <p className="mt-1 text-sm text-gray-500">
-            Update your workspace name.
-          </p>
-        </div>
-
-        <div className="px-6 py-6">
-          <label
-            htmlFor="workspace-name"
-            className="mb-2 block text-sm font-medium text-gray-700"
-          >
-            Workspace name
-          </label>
-
-          <input
-            id="workspace-name"
-            type="text"
-            value={workspace?.name}
-            onChange={(e) => {
-              if (workspace) {
-                setWorkspace({
-                  ...workspace,
-                  name: e.target.value,
-                });
-              }
-              setError("");
-              setMessage("");
-            }}
-            placeholder="Enter workspace name"
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-          />
-
-          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
-
-          {message && <p className="mt-2 text-sm text-green-600">{message}</p>}
-
-          <div className="mt-5 flex justify-end">
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving || !workspace?.name.trim()}
-              className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
-            >
-              {saving ? "Saving..." : "Save changes"}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Danger zone */}
-      <section className="mt-8 rounded-2xl border border-red-200 bg-white shadow-sm">
-        <div className="border-b border-red-100 px-6 py-5">
-          <h2 className="text-lg font-semibold text-red-600">Danger Zone</h2>
-
-          <p className="mt-1 text-sm text-gray-500">
-            These actions can permanently affect this workspace.
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between gap-6 px-6 py-6">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-800">
-              Delete workspace
-            </h3>
-
-            <p className="mt-1 max-w-xl text-sm text-gray-500">
-              Permanently delete this workspace and its associated boards,
-              lists, and cards. This action cannot be undone.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="shrink-0 rounded-xl border border-red-300 px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {deleting ? "Deleting..." : "Delete workspace"}
-          </button>
-        </div>
-      </section>
+ 
+      <button
+        type="button"
+        onClick={handleDelete}
+        disabled={deleting}
+        className="shrink-0 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-rose-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {deleting ? "Deleting..." : "Delete workspace"}
+      </button>
     </div>
+  </section>
+</div>
   );
 };
 
