@@ -24,7 +24,10 @@ const members: Member[] = [
   { id: 8, name: "Meera Joshi" },
 ];
 
-const ContentPanel: React.FC = () => {
+const ContentPanel: React.FC<{
+  isMobileOpen: boolean;
+  setIsMobileOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}> = ({ setIsMobileOpen, isMobileOpen }) => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const { pathname } = useLocation();
@@ -61,17 +64,38 @@ const ContentPanel: React.FC = () => {
   return (
     <div className="relative flex h-screen min-h-0 min-w-0 flex-1 flex-col bg-slate-50">
       {/* Workspace Header */}
-      <div className="flex items-center gap-4 border-b border-slate-200 bg-white px-8 py-5">
+      <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3.5 sm:gap-4 sm:px-8 sm:py-5">
+        <button
+          type="button"
+          onClick={() => setIsMobileOpen(true)}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/15 active:scale-95 md:hidden"
+          aria-label="Open workspace navigation"
+          aria-expanded={isMobileOpen}
+        >
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.75}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </button>
         {workspace != null ? (
           <>
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-500 to-violet-600 text-xl font-semibold text-white shadow-md shadow-indigo-500/25 ring-4 ring-indigo-50">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-lg font-semibold text-white shadow-md shadow-indigo-500/25 ring-4 ring-indigo-50 sm:h-12 sm:w-12 sm:rounded-2xl sm:text-xl">
               {workspaceInitial}
             </div>
-            <div className="flex min-w-0 flex-col gap-1.5 leading-none">
-              <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5 leading-none sm:flex-none">
+              <h1 className="truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
                 {workspace?.name || "Workspace"}
               </h1>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2 sm:gap-2.5">
                 {/* Stacked member avatars (max 5) */}
                 <div className="flex -space-x-2">
                   {members.slice(0, 5).map((member) =>
@@ -81,20 +105,20 @@ const ContentPanel: React.FC = () => {
                         src={member.avatar}
                         alt={member.name}
                         title={member.name}
-                        className="h-6 w-6 rounded-full object-cover ring-2 ring-white"
+                        className="h-5 w-5 rounded-full object-cover ring-2 ring-white sm:h-6 sm:w-6"
                       />
                     ) : (
                       <span
                         key={member.id}
                         title={member.name}
-                        className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-semibold text-indigo-700 ring-2 ring-white"
+                        className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[9px] font-semibold text-indigo-700 ring-2 ring-white sm:h-6 sm:w-6 sm:text-[10px]"
                       >
                         {member.name?.charAt(0).toUpperCase()}
                       </span>
                     ),
                   )}
                 </div>
-                <span className="text-xs font-medium text-slate-500">
+                <span className="whitespace-nowrap text-xs font-medium text-slate-500">
                   {members.length} {members.length === 1 ? "member" : "members"}
                 </span>
               </div>
@@ -102,7 +126,7 @@ const ContentPanel: React.FC = () => {
           </>
         ) : (
           <>
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-slate-400">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 sm:h-12 sm:w-12 sm:rounded-2xl">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
@@ -118,11 +142,11 @@ const ContentPanel: React.FC = () => {
                 />
               </svg>
             </div>
-            <div className="flex flex-col gap-1.5 leading-none">
-              <h1 className="text-xl font-semibold tracking-tight text-slate-400">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5 leading-none sm:flex-none">
+              <h1 className="truncate text-lg font-semibold tracking-tight text-slate-400 sm:text-xl">
                 No workspace selected
               </h1>
-              <span className="text-xs text-slate-400">
+              <span className="hidden text-xs text-slate-400 sm:block">
                 Choose a workspace from the sidebar to get started.
               </span>
             </div>
@@ -130,6 +154,7 @@ const ContentPanel: React.FC = () => {
         )}
         <NotificationToast />
       </div>
+
       {/* if workspace not selected */}
       {!workspaceId && (
         <div className="relative flex min-h-screen  flex-1b flex-col items-center justify-center gap-6 bg-slate-50 px-8">

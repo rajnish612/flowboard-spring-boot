@@ -72,8 +72,10 @@ const Column: React.FC<ColumnProps> = ({
 
   return (
     <div
-      className={`flex flex-col w-64 shrink-0 rounded-2xl shadow-sm transition-colors ${
-        dragOver ? "bg-indigo-50/80 ring-2 ring-indigo-300" : "bg-gray-100/80"
+      className={`flex w-64 shrink-0 flex-col rounded-2xl shadow-sm shadow-slate-900/5 ring-1 ring-inset transition-colors duration-200 ${
+        dragOver
+          ? "bg-indigo-50/80 ring-2 ring-indigo-300"
+          : "bg-slate-100/80 ring-slate-200/80"
       }`}
       onDragOver={(e) => {
         e.preventDefault();
@@ -94,9 +96,9 @@ const Column: React.FC<ColumnProps> = ({
         draggable
         onDragStart={(e) => onDragStartList(e, list.id)}
         onDragEnd={onDragEndList}
-        className="flex items-center justify-between px-3 pt-3 pb-2 cursor-grab active:cursor-grabbing"
+        className="flex cursor-grab items-center justify-between px-3 pb-2 pt-3 active:cursor-grabbing"
       >
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           {isEditing ? (
             <input
               autoFocus
@@ -110,18 +112,18 @@ const Column: React.FC<ColumnProps> = ({
                   setIsEditing(false);
                 }
               }}
-              className="flex-1 min-w-0 text-sm font-semibold text-gray-700 bg-white border border-indigo-300 rounded-lg px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="min-w-0 flex-1 rounded-lg border border-indigo-500 bg-white px-2 py-0.5 text-[13px] font-semibold text-slate-900 outline-none ring-4 ring-indigo-500/10"
             />
           ) : (
             <h3
               onDoubleClick={() => setIsEditing(true)}
               title="Double-click to rename"
-              className="text-sm font-semibold text-gray-700 truncate cursor-default"
+              className="cursor-default truncate text-[13px] font-semibold tracking-tight text-slate-800"
             >
               {list.name}
             </h3>
           )}
-          <span className="text-xs text-gray-400 bg-gray-200 rounded-full px-1.5 py-0.5 font-medium shrink-0">
+          <span className="shrink-0 rounded-full bg-white px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-slate-500 ring-1 ring-inset ring-slate-200">
             {cards.length}
           </span>
         </div>
@@ -130,7 +132,7 @@ const Column: React.FC<ColumnProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowMenu((v) => !v)}
-            className="p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+            className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-200/70 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
           >
             <svg
               className="h-4 w-4"
@@ -147,13 +149,13 @@ const Column: React.FC<ColumnProps> = ({
             </svg>
           </button>
           {showMenu && (
-            <div className="absolute right-0 top-8 z-20 w-40 rounded-xl bg-white border border-gray-200 shadow-lg py-1">
+            <div className="absolute right-0 top-8 z-20 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-xl shadow-slate-900/10 ring-1 ring-slate-900/5">
               <button
                 onClick={() => {
                   setShowMenu(false);
                   setIsEditing(true);
                 }}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                className="w-full rounded-lg px-3 py-2 text-left text-[13px] text-slate-700 transition-colors hover:bg-slate-50"
               >
                 Rename list
               </button>
@@ -162,7 +164,7 @@ const Column: React.FC<ColumnProps> = ({
                   setShowMenu(false);
                   onDeleteList(list.id);
                 }}
-                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                className="w-full rounded-lg px-3 py-2 text-left text-[13px] text-rose-600 transition-colors hover:bg-rose-50"
               >
                 Delete list
               </button>
@@ -172,7 +174,7 @@ const Column: React.FC<ColumnProps> = ({
       </div>
 
       {/* Cards */}
-      <div className="flex flex-col gap-2 px-2 pb-2 overflow-y-auto max-h-[calc(100vh-220px)]">
+      <div className="flex max-h-[calc(100vh-220px)] flex-col gap-2 overflow-y-auto px-2 pb-2">
         {cards.map((card, index) => (
           <CardItem
             key={card.id}
@@ -196,7 +198,7 @@ const Column: React.FC<ColumnProps> = ({
       {!addingCard && (
         <button
           onClick={() => setAddingCard(true)}
-          className="flex items-center gap-1.5 mx-2 mb-2 mt-1 px-2 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors"
+          className="mx-2 mb-2 mt-1 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-medium text-slate-500 transition-colors hover:bg-slate-200/70 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
         >
           <svg
             className="h-4 w-4"
@@ -657,7 +659,7 @@ const Board: React.FC = () => {
 
   return (
     <div
-      className="flex flex-col min-h-screen bg-cover bg-center bg-no-repeat"
+      className="flex min-h-screen flex-col bg-cover bg-center bg-no-repeat"
       style={{
         backgroundImage: boardBackground
           ? `url(${boardBackground})`
@@ -665,36 +667,20 @@ const Board: React.FC = () => {
       }}
     >
       {/* Board Header */}
-      <div className="flex items-center justify-between px-6 py-3 bg-black/20 backdrop-blur-sm">
+      <div className="flex items-center justify-between border-b border-white/10 bg-black/25 px-4 py-3 backdrop-blur-md sm:px-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-bold text-white">Board #{boardId}</h1>
-          <span className="text-white/40">|</span>
-          <span className="text-sm text-white/60">
+          <h1 className="text-lg font-semibold tracking-tight text-white drop-shadow-sm">
+            Board #{boardId}
+          </h1>
+          <span className="text-white/30">|</span>
+          <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/85 ring-1 ring-inset ring-white/15">
             {lists.length} list{lists.length !== 1 ? "s" : ""}
           </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1 text-sm text-white/80 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
-              />
-            </svg>
-            Filter
-          </button>
         </div>
       </div>
 
       {/* Columns */}
-      <div className="flex items-start gap-4 px-6 py-4 overflow-x-auto flex-1">
+      <div className="flex flex-1 items-start gap-4 overflow-x-auto px-4 pb-6 pt-5 sm:px-6">
         {lists.map((list, listIndex) => (
           <Column
             key={list.id}
@@ -723,7 +709,7 @@ const Board: React.FC = () => {
         ) : (
           <button
             onClick={() => setAddingList(true)}
-            className="flex items-center gap-2 w-64 shrink-0 px-4 py-3 rounded-2xl bg-white/20 hover:bg-white/30 text-white text-sm font-medium transition-colors backdrop-blur-sm"
+            className="flex w-64 shrink-0 items-center gap-2 rounded-2xl bg-white/15 px-4 py-3 text-[13px] font-medium text-white shadow-sm shadow-black/10 ring-1 ring-inset ring-white/20 backdrop-blur-md transition-colors hover:bg-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
             <svg
               className="h-4 w-4"

@@ -36,7 +36,7 @@ export const CardItem: React.FC<CardItemProps> = ({
         onDrop(e, index);
       }}
       onClick={onClick}
-      className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all duration-150 group relative"
+      className="group relative cursor-pointer rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm shadow-slate-900/5 transition-all duration-200 hover:-translate-y-px hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-900/10 active:cursor-grabbing"
     >
       {/* Delete button (hover) */}
       <button
@@ -44,7 +44,7 @@ export const CardItem: React.FC<CardItemProps> = ({
           e.stopPropagation();
           onDelete(card.id);
         }}
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded text-gray-300 hover:text-red-500 hover:bg-red-50"
+        className="absolute right-2 top-2 rounded-md p-1 text-slate-300 opacity-0 transition hover:bg-rose-50 hover:text-rose-500 focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-rose-500/30 group-hover:opacity-100"
       >
         <svg
           className="h-3.5 w-3.5"
@@ -61,46 +61,50 @@ export const CardItem: React.FC<CardItemProps> = ({
         </svg>
       </button>
 
-      <p className="text-sm text-gray-800 font-medium leading-snug mb-2 pr-4">
+      <p className="mb-2 pr-5 text-[13px] font-medium leading-snug text-slate-900">
         {card.title}
       </p>
       {/* <p className="text-sm text-gray-800 font-medium leading-snug mb-2 pr-4">
-        {card.description}
-      </p> */}
+    {card.description}
+  </p> */}
       {/* Assigned member */}
       {card.assignedToAvatar && (
-        <div className="flex items-center gap-2 mb-2">
+        <div className="mb-2.5 flex items-center gap-2.5">
           <div className="relative">
             <img
               src={card.assignedToAvatar}
               alt={card.assignedToName || "Assigned member"}
-              className="w-7 h-7 rounded-full object-cover ring-2 ring-white shadow-sm"
+              className="h-7 w-7 rounded-full object-cover shadow-sm shadow-slate-900/10 ring-2 ring-white"
             />
 
             {/* Online/assigned indicator */}
-            <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 border-2 border-white rounded-full" />
+            <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border-2 border-white bg-emerald-500" />
           </div>
 
-          <div className="flex flex-col min-w-0">
-            <span className="text-[11px] text-gray-400 leading-none">
+          <div className="flex min-w-0 flex-col leading-tight">
+            <span className="text-[10px] font-medium text-slate-400">
               Assigned to
             </span>
 
-            <span className="text-xs font-medium text-gray-700 truncate max-w-[120px]">
+            <span className="max-w-[120px] truncate text-xs font-medium text-slate-800">
               {card.assignedToName || "Member"}
             </span>
-            <span className="text-xs font-light text-blue-700 truncate max-w-[120px]">
+            <span className="max-w-[120px] truncate text-[11px] text-slate-400">
               {card.assignedToEmail || "Member"}
             </span>
-            {user?.id == card.assignedTo && <span className="text-red-400 font-semibold text-xs">You</span>}
+            {user?.id == card.assignedTo && (
+              <span className="mt-0.5 w-fit rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600 ring-1 ring-inset ring-indigo-100">
+                You
+              </span>
+            )}
           </div>
         </div>
       )}
-      <div className="flex items-center gap-2 mt-1">
+      <div className="mt-1 flex items-center gap-2">
         {formattedDate && (
-          <span className="flex items-center gap-0.5 text-[11px] text-gray-400">
+          <span className="flex items-center gap-1 rounded-md bg-slate-50 px-1.5 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200/70">
             <svg
-              className="h-3 w-3"
+              className="h-3 w-3 text-slate-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -117,7 +121,7 @@ export const CardItem: React.FC<CardItemProps> = ({
         )}
         {card.description && (
           <svg
-            className="h-3.5 w-3.5 text-gray-400"
+            className="h-3.5 w-3.5 text-slate-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

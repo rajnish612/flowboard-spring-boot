@@ -19,7 +19,7 @@ export const AddListForm: React.FC<AddListFormProps> = ({ onClose, onAdd }) => {
   };
 
   return (
-    <div className="flex flex-col gap-2 w-64 flex-shrink-0 bg-gray-100/80 rounded-2xl p-3 shadow-sm">
+    <div className="flex w-64 flex-shrink-0 flex-col gap-2.5 rounded-2xl bg-slate-100/80 p-3 shadow-sm shadow-slate-900/5 ring-1 ring-inset ring-slate-200/80">
       <input
         autoFocus
         value={value}
@@ -29,19 +29,22 @@ export const AddListForm: React.FC<AddListFormProps> = ({ onClose, onAdd }) => {
           if (e.key === "Escape") onClose();
         }}
         placeholder="Enter list title..."
-        className="w-full rounded-lg border border-indigo-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm"
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm shadow-slate-900/5 outline-none transition placeholder:font-normal placeholder:text-slate-400 hover:border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
       />
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={loading || !value.trim()}
-          className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="rounded-lg bg-indigo-600 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/25 transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/25 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
         >
           {loading ? "Adding..." : "Add list"}
         </button>
         <button
+          type="button"
           onClick={onClose}
-          className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+          aria-label="Cancel"
+          className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-200/70 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
         >
           <svg
             className="h-4 w-4"

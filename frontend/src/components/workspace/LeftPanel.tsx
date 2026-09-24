@@ -94,7 +94,10 @@ const dropdownOptions = [
   },
 ];
 
-const LeftPanel: React.FC = () => {
+const LeftPanel: React.FC<{
+  isMobileOpen: boolean;
+  setIsMobileOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}> = ({ isMobileOpen, setIsMobileOpen }) => {
   const [fetchingWorkspaces, setFetchingWorkspaces] = useState<boolean>(true);
   const [workspaces, setWorkspaces] = useState<WorkSpace[]>(initialWorkspaces);
   const [activeView, setActiveView] = useState<WorkspaceView>("mine");
@@ -102,7 +105,6 @@ const LeftPanel: React.FC = () => {
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [workspaceName, setWorkspaceName] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { user, logout } = useAuth();
 
   const createWorkspace = async () => {
@@ -146,29 +148,7 @@ const LeftPanel: React.FC = () => {
 
   return (
     <>
-      {!isMobileOpen && (
-        <button
-          type="button"
-          onClick={() => setIsMobileOpen(true)}
-          className="fixed left-4 top-4 z-50 rounded-xl bg-white p-2.5 text-slate-600 shadow-lg ring-1 ring-slate-200 transition hover:bg-indigo-50 hover:text-indigo-600 md:hidden"
-          aria-label="Open workspace navigation"
-          aria-expanded={isMobileOpen}
-        >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
-      )}
+   
 
       {isMobileOpen && (
         <button

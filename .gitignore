@@ -3,3 +3,17 @@ node_modules/
 application-local.properties
 .idea
 .vscode
+notificationservice/hs_err_pid2960.log
+notificationservice/replay_pid2960.log
+hs_err_pid7008.log
+hs_err_pid21340.log
+hs_err_pid26960.log
+hs_err_pid30840.log
+hs_err_pid32432.log
+replay_pid7008.log
+replay_pid21340.log
+replay_pid30840.log
+replay_pid32432.log
+replay_pid26960.log
+eureka-server/hs_err_pid35756.log
+eureka-server/replay_pid35756.log
