@@ -1,4 +1,4 @@
-import { Bell, Check, CheckCheck, ChevronDown, LogOut, X } from "lucide-react";
+import { Bell, Check, CheckCheck,X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useAuth } from "../hooks/UseAuth";
