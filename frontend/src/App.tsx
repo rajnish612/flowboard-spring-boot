@@ -9,7 +9,6 @@ import Members from "./components/workspace/contents/Members";
 import Settings from "./components/workspace/contents/Settings";
 import Activities from "./components/workspace/contents/Activities";
 import { ApiErrorProvider } from "./context/ApiErrorContext";
-import NotificationToast from "./components/NotificationToast";
 
 const App = () => {
   return (
