@@ -11,30 +11,46 @@ type Workspace = {
   createdAt?: string;
   updatedAt?: string;
 };
-type Member = { id: number; name: string; avatar?: string };
-
-const members: Member[] = [
-  { id: 1, name: "Aarav Sharma", avatar: "https://i.pravatar.cc/80?img=12" },
-  { id: 2, name: "Priya Nair" },
-  { id: 3, name: "Rohan Mehta", avatar: "https://i.pravatar.cc/80?img=33" },
-  { id: 4, name: "Sneha Kulkarni" },
-  { id: 5, name: "Vikram Rao", avatar: "https://i.pravatar.cc/80?img=51" },
-  { id: 6, name: "Ananya Iyer" },
-  { id: 7, name: "Karthik Reddy", avatar: "https://i.pravatar.cc/80?img=15" },
-  { id: 8, name: "Meera Joshi" },
-];
+type Member = {
+  id: number;
+  userId: number;
+  name: string;
+  email: string;
+  avatar?: string | null;
+  role?: "OWNER" | "MEMBER";
+};
 
 const ContentPanel: React.FC<{
   isMobileOpen: boolean;
   setIsMobileOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }> = ({ setIsMobileOpen, isMobileOpen }) => {
+  const [members, setMembers] = useState<Member[]>([]);
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const { pathname } = useLocation();
   // Start as true only when there is a workspaceId to fetch; false otherwise
   const [loading, setLoading] = useState<boolean>(!!workspaceId);
+  const [membersLoading, setMembersLoading] = useState<boolean>(true);
   const workspaceInitial = workspace?.name?.charAt(0).toUpperCase() || "W";
 
+  // Fetch members of the selected workspace.
+  useEffect(() => {
+    if (!workspaceId) return;
+    const fetchMembers = async () => {
+      setLoading(true);
+      try {
+        const res = await axiosIns.get(`/api/workspace/member/${workspaceId}`);
+        setMembers(res.data);
+        console.log("members", res.data);
+      } catch (err) {
+        console.error("Unable to fetch workspace members:", err);
+      } finally {
+        setMembersLoading(false);
+      }
+    };
+
+    fetchMembers();
+  }, [workspaceId]);
   // Fetch workspace details
   const fetchWorkspace = () => {
     if (pathname == "/dashboard") {
@@ -205,6 +221,9 @@ const ContentPanel: React.FC<{
               workspace,
               setWorkspace,
               refreshWorkspace: fetchWorkspace,
+              members: members,
+              setMembers: setMembers,
+              membersLoading: membersLoading,
             }}
           />
         )}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, {  useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router";
 import { axiosIns } from "../../../utils/axiosInstance";
@@ -20,34 +20,20 @@ type User = {
 };
 const Members: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
-  const [members, setMembers] = useState<Member[]>([]);
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [email, setEmail] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
   const [adding, setAdding] = useState(false);
   const [removingMemberId, setRemovingMemberId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { workspace } = useWorkspaceContext();
+  const {
+    workspace,
+    members,
+    setMembers,
+    membersLoading: loading,
+  } = useWorkspaceContext();
   const canManageMembers = Boolean(user?.id && workspace?.ownerId === user.id);
-  // Fetch members of the selected workspace.
-  useEffect(() => {
-    if (!workspaceId) return;
-    const fetchMembers = async () => {
-      setLoading(true);
-      try {
-        const res = await axiosIns.get(`/api/workspace/member/${workspaceId}`);
-        setMembers(res.data);
-        console.log("members", res.data);
-      } catch (err) {
-        console.error("Unable to fetch workspace members:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchMembers();
-  }, [workspaceId]);
   // Add a new member using their email.
   const addMember = async () => {
     const trimmedEmail = email.trim();

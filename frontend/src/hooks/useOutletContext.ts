@@ -7,10 +7,22 @@ export type Workspace = {
   updatedAt?: string;
 };
 
+type Member = {
+  id: number;
+  userId: number;
+  name: string;
+  email: string;
+  avatar?: string | null;
+  role?: "OWNER" | "MEMBER";
+};
+
 export type ContentPanelContext = {
   workspace: Workspace | null;
   setWorkspace: React.Dispatch<React.SetStateAction<Workspace | null>>;
   refreshWorkspace: () => void;
+  members: Member[];
+  setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
+  membersLoading: boolean;
 };
 
 // Helper hook for child routes
