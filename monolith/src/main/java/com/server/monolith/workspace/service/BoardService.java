@@ -1,0 +1,118 @@
+package com.server.monolith.workspace.service;
+
+import com.server.monolith.workspace.dto.BoardDTO;
+import com.server.monolith.workspace.model.Board;
+import com.server.monolith.workspace.repository.BoardRepo;
+import com.server.monolith.workspace.repository.WorkSpaceRepo;
+import com.server.monolith.workspace.repository.WorkspaceMemberRepo;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+//Service for the management of workspaces
+@Service
+@RequiredArgsConstructor
+public class BoardService {
+
+    private final BoardRepo boardRepo;
+    private final WorkSpaceRepo workSpaceRepo;
+    private final WorkspaceMemberRepo workspaceMemberRepo;
+
+    //Method to get boards by workspace id
+    public List<BoardDTO> getBoardsByWorkspaceId(Long workspaceId) {
+        return boardRepo.findBoardsByWorkspaceId(workspaceId)
+                .stream()
+                .map(b -> BoardDTO
+                        .builder()
+                        .id(b.getId())
+                        .workspaceId(b.getWorkspaceId())
+                        .name(b.getName())
+                        .description(b.getDescription())
+                        .backgroundImage(b.getBackgroundImage())
+                        .build()).toList();
+    }
+
+    //Method to fetch board using board id
+    public BoardDTO getBoardById(Long boardId, Long userId) {
+        Board board = boardRepo.findById(boardId)
+                .orElseThrow(() -> new EntityNotFoundException("Board not found: " + boardId));
+
+        if (!hasUserAccessToBoard(boardId, userId)) {
+            throw new AccessDeniedException("You are not authorized to access this board");
+        }
+
+        return BoardDTO.builder()
+                .id(board.getId())
+                .workspaceId(board.getWorkspaceId())
+                .name(board.getName())
+                .description(board.getDescription())
+                .backgroundImage(board.getBackgroundImage())
+                .createdAt(board.getCreatedAt())
+                .updatedAt(board.getUpdatedAt())
+                .build();
+    }
+
+    //Method to fetch board using board id
+    public List<BoardDTO> getBoardsByIds(List<Long> boardIds) {
+        return boardRepo.findAllById(boardIds).stream().map(board -> BoardDTO.builder().name(board.getName()).description(board.getDescription()).backgroundImage(board.getBackgroundImage()).workspaceId(board.getWorkspaceId()).id(board.getId()).createdAt(board.getCreatedAt()).build()).toList();
+    }
+
+    //Method to create new board
+    public BoardDTO createBoard(BoardDTO boardDTO, Long userId) {
+        boolean isOwner = workSpaceRepo.checkIsOwner(
+                userId,
+                boardDTO.getWorkspaceId()
+        ); //First check if the user is owner of the workspace or not
+
+        if (!isOwner) {
+            throw new AccessDeniedException(
+                    "You are not authorized to create a board in this workspace"
+            );
+        } //if not, then not allowed to create board
+        Board newBoard = Board.builder()
+                .name(boardDTO.getName())
+                .description(boardDTO.getDescription())
+                .backgroundImage(boardDTO.getBackgroundImage())
+                .workspaceId(boardDTO.getWorkspaceId())
+                .build();
+
+        Board boardCreated = boardRepo.save(newBoard);
+
+        return BoardDTO.builder()
+                .id(boardCreated.getId())
+                .name(boardCreated.getName())
+                .description(boardCreated.getDescription())
+                .backgroundImage(boardCreated.getBackgroundImage())
+                .workspaceId(boardCreated.getWorkspaceId())
+                .build();
+
+
+    }
+
+    //Method to check if user has the access to board or not using board and user Id
+    public boolean hasUserAccessToBoard(Long boardId, Long userId) {
+
+        Board board = boardRepo.findById(boardId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Board not found: " + boardId));
+
+        Long workspaceId = board.getWorkspaceId();
+
+        boolean isOwner =
+                workSpaceRepo.existsByIdAndOwnerId(
+                        workspaceId,
+                        userId
+                );//Check if user is owner
+
+        boolean isMember =
+                workspaceMemberRepo.existsByWorkspaceIdAndUserId(
+                        workspaceId,
+                        userId
+                );//Check if user is the member 
+
+        return isOwner || isMember;
+    }
+}
