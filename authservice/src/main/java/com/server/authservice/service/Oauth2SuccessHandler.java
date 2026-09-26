@@ -27,13 +27,15 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
     private final JwtService jwtService;
     @Value("${client.uri}")
     private String clientUri;
-
+    @Value("${app.cookie.same-site}")
+    private String cookieSameSite;
     @Value("${app.cookie.secure}")
     private boolean cookieSecure;
 
-    //   METHOD TO GENERATE JWT AND REDIRECT AFTER SUCCESSFULL OAUTH AUTHENTICATION
+    // METHOD TO GENERATE JWT AND REDIRECT AFTER SUCCESSFULL OAUTH AUTHENTICATION
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+            Authentication authentication) throws IOException, ServletException {
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
         String email = oidcUser.getEmail();
         if (email == null) {
@@ -52,11 +54,11 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
                 .httpOnly(true)
                 .secure(cookieSecure) // true in HTTPS production
                 .path("/")
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .maxAge(Duration.ofHours(1))
                 .build();
 
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString()); //Saving the token inside cookie
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString()); // Saving the token inside cookie
         log.info("OAuth login successful for {}, redirecting to React", email);
         response.sendRedirect(clientUri + "/oauth-success");
 
