@@ -1,6 +1,5 @@
 package com.server.monolith.config;
 
-
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,6 @@ import javax.crypto.SecretKey;
 import java.util.Arrays;
 import java.util.List;
 
-
 //CUSTOM SECURITY CONFIG TO USED BY SPRING SECURITY
 @Slf4j
 @EnableWebSecurity
@@ -42,7 +40,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http.csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
-                .formLogin(formLogin -> formLogin.disable()).authorizeHttpRequests(auth -> auth.requestMatchers("/login/**", "/oauth2/**").permitAll().anyRequest().authenticated()).oauth2Login(oauth -> oauth.failureHandler(((request, response, exception) -> {
+                .formLogin(formLogin -> formLogin.disable()).authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/login/**", "/oauth2/**").permitAll().anyRequest().authenticated())
+                .oauth2Login(oauth -> oauth.failureHandler(((request, response, exception) -> {
                     log.error("Login failed: {}", exception.getMessage());
                     response.sendRedirect(clientUri + "/login?error=oauth");
                 })).successHandler(oauth2SuccessHandler))
@@ -50,12 +50,11 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth -> oauth
                         .bearerTokenResolver(new CookieBearerTokenResolver())
                         .jwt(jwt -> {
-                        }));  // ENABLES JWT BEARER-TOKEN AUTHENTICATION
+                        })); // ENABLES JWT BEARER-TOKEN AUTHENTICATION
 
         ;
         return http.build();
     }
-
 
     // CUSTOM JWT DECODER USED BY SPRING SECURITY TO VALIDATE JWTs
     @Bean
@@ -66,27 +65,21 @@ public class SecurityConfig {
         return NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
     }
 
-
-    //    CUSTOM CORS CONFIGURATION
+    // CUSTOM CORS CONFIGURATION
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(
-                Arrays.stream(allowedOrigins).toList()
-        );
+                Arrays.stream(allowedOrigins).toList());
 
         config.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-        );
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
-        config.setAllowedHeaders(
-                List.of("Authorization", "Content-Type")
-        );
+        config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
         source.registerCorsConfiguration("/**", config);
 
