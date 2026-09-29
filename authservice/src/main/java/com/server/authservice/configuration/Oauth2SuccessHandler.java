@@ -37,9 +37,8 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) throws IOException, ServletException {
+            Authentication authentication) throws IOException, ServletException {
 
-       
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
         String email = oidcUser.getEmail();
         if (email == null) {
@@ -59,11 +58,9 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
                 .secure(cookieSecure) // true in HTTPS production
                 .path("/")
                 .sameSite(cookieSameSite)
-                .sameSite(cookieSameSite)
                 .maxAge(Duration.ofHours(1))
                 .build();
 
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString()); // Saving the token inside cookie
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString()); // Saving the token inside cookie
         log.info("OAuth login successful for {}, redirecting to React", email);
         response.sendRedirect(clientUri + "/oauth-success");

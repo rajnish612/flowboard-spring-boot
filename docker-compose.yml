@@ -37,7 +37,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID in .env}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?Set GOOGLE_CLIENT_SECRET in .env}
       EUREKA_URL: http://eureka-server:8761/eureka/
-      CLIENT_URI: http://localhost:3000
+      CLIENT_URI: ${CLIENT_URI:-http://localhost:3000}
       GOOGLE_REDIRECT_URI: http://localhost:8081/login/oauth2/code/google
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       COOKIE_SAME_SITE: ${COOKIE_SECURE:-Lax}
@@ -70,14 +70,14 @@ services:
       kafka-1:
         condition: service_started
       kafka-2:
-        condition: service_started  
+        condition: service_started
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/task_db
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-user}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       EUREKA_URL: http://eureka-server:8761/eureka/
-      WEBSOCKET_ALLOWED_ORIGINS: http://localhost:3000
+      WEBSOCKET_ALLOWED_ORIGINS: ${WEBSOCKET_ALLOWED_ORIGINS:-http://localhost:3000}
       KAFKA_BOOTSTRAP_SERVERS: kafka-1:19092,kafka-2:19092
 
   notificationservice:
@@ -99,7 +99,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-user}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       EUREKA_URL: http://eureka-server:8761/eureka/
-      WEBSOCKET_ALLOWED_ORIGINS: http://localhost:3000
+      WEBSOCKET_ALLOWED_ORIGINS: ${WEBSOCKET_ALLOWED_ORIGINS:-http://localhost:3000}
       KAFKA_BOOTSTRAP_SERVERS: kafka-1:19092,kafka-2:19092
 
   gateway:
