@@ -7,12 +7,14 @@ import com.server.monolith.workspace.repository.WorkSpaceRepo;
 import com.server.monolith.workspace.repository.WorkspaceMemberRepo;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 //Service for the management of workspaces
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BoardService {
@@ -23,7 +25,8 @@ public class BoardService {
 
     //Method to get boards by workspace id
     public List<BoardDTO> getBoardsByWorkspaceId(Long workspaceId) {
-        return boardRepo.findBoardsByWorkspaceId(workspaceId)
+        log.info("Fetching boards for workspaceId: {}", workspaceId);
+        List<BoardDTO> result = boardRepo.findBoardsByWorkspaceId(workspaceId)
                 .stream()
                 .map(b -> BoardDTO
                         .builder()
@@ -33,18 +36,29 @@ public class BoardService {
                         .description(b.getDescription())
                         .backgroundImage(b.getBackgroundImage())
                         .build()).toList();
+        if (result.isEmpty()) {
+            log.debug("No boards found for workspaceId={}", workspaceId);
+            return List.of();
+        }
+        log.info("Fetched {} boards for workspaceId: {}", result.size(), workspaceId);
+        return result;
     }
 
     //Method to fetch board using board id
     public BoardDTO getBoardById(Long boardId, Long userId) {
+
+        log.info("Fetching board: boardId={}, userId={}", boardId, userId);
         Board board = boardRepo.findById(boardId)
                 .orElseThrow(() -> new EntityNotFoundException("Board not found: " + boardId));
 
         if (!hasUserAccessToBoard(boardId, userId)) {
+            log.warn("Unauthorized board access attempt: boardId={}, userId={}",
+                    boardId, userId);
             throw new AccessDeniedException("You are not authorized to access this board");
         }
 
-        return BoardDTO.builder()
+
+        BoardDTO boardDTO = BoardDTO.builder()
                 .id(board.getId())
                 .workspaceId(board.getWorkspaceId())
                 .name(board.getName())
@@ -53,21 +67,36 @@ public class BoardService {
                 .createdAt(board.getCreatedAt())
                 .updatedAt(board.getUpdatedAt())
                 .build();
+        log.info("Board fetched successfully: boardId={}, userId={}",
+                boardId, userId);
+        return boardDTO;
     }
 
     //Method to fetch board using board id
     public List<BoardDTO> getBoardsByIds(List<Long> boardIds) {
-        return boardRepo.findAllById(boardIds).stream().map(board -> BoardDTO.builder().name(board.getName()).description(board.getDescription()).backgroundImage(board.getBackgroundImage()).workspaceId(board.getWorkspaceId()).id(board.getId()).createdAt(board.getCreatedAt()).build()).toList();
+        log.info("fetching boards for {} ids", boardIds.size());
+        List<BoardDTO> result = boardRepo.findAllById(boardIds).stream().map(board -> BoardDTO.builder().name(board.getName()).description(board.getDescription()).backgroundImage(board.getBackgroundImage()).workspaceId(board.getWorkspaceId()).id(board.getId()).createdAt(board.getCreatedAt()).build()).toList();
+        if (result.isEmpty()) {
+            log.info("No boards found for {} ids", boardIds.size());
+
+            return List.of();
+        }
+        log.info("{} Boards fetched for {} ids", result.size(), boardIds.size());
+        return result;
     }
 
     //Method to create new board
     public BoardDTO createBoard(BoardDTO boardDTO, Long userId) {
+        log.info("creating board {} for workspace with id: {} ", boardDTO.getName(), boardDTO.getWorkspaceId());
+
         boolean isOwner = workSpaceRepo.checkIsOwner(
                 userId,
                 boardDTO.getWorkspaceId()
         ); //First check if the user is owner of the workspace or not
-
         if (!isOwner) {
+            log.warn("Unauthorized board creation attempt: workspaceId={}, userId={}",
+                    boardDTO.getWorkspaceId(), userId);
+
             throw new AccessDeniedException(
                     "You are not authorized to create a board in this workspace"
             );
@@ -80,6 +109,11 @@ public class BoardService {
                 .build();
 
         Board boardCreated = boardRepo.save(newBoard);
+        log.info("Board created successfully: boardId={}, workspaceId={}, userId={}",
+                boardCreated.getId(),
+                boardCreated.getWorkspaceId(),
+                userId);
+
 
         return BoardDTO.builder()
                 .id(boardCreated.getId())

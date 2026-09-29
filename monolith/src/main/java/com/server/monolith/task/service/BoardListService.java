@@ -38,14 +38,18 @@ public class BoardListService {
 
     // Fetch all lists for a board, already ordered by position
     public List<BoardListDTO> getListsByBoardId(Long boardId) {
-        return boardListRepo.findByBoardIdOrderByPositionAsc(boardId)
+        log.info("Fetching lists for board with id: {}", boardId);
+        List<BoardListDTO> result = boardListRepo.findByBoardIdOrderByPositionAsc(boardId)
                 .stream()
                 .map(this::toDTO)
                 .toList();
+        log.info("Fetched {} lists for board with id: {}", result.size(), boardId);
+        return result;
     }
 
     // Create a new list; auto-assigns the next position at the end
     public BoardListDTO createList(BoardListDTO dto, Long userId) {
+        log.info("Creating list name: {} boardId: {} by user: {}", dto.getName(), dto.getBoardId(), userId);
         int nextPosition = boardListRepo
                 .findMaxPositionByBoardId(dto.getBoardId())
                 .map(max -> max + 1)
@@ -86,6 +90,8 @@ public class BoardListService {
 
     // Update the name (and optionally position) of a list
     public BoardListDTO updateList(Long id, BoardListDTO dto, Long userId) {
+
+        log.info("Updating list id={} by userId={}", id, userId);
         BoardList list = boardListRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
 
@@ -114,7 +120,8 @@ public class BoardListService {
                         NotificationType.LIST_UPDATED,
                         "List updated",
                         "updated list \"" + updated.getName() + "\""));
-        log.info("Updated list id={}", id);
+        log.info("List updated successfully: id={}, name={}, userId={}",
+                updated.getId(), updated.getName(), userId);
         return toDTO(updated);
     }
 
@@ -168,6 +175,8 @@ public class BoardListService {
         }
         int targetIndex = Math.max(0, Math.min(newPosition, siblings.size() - 1));
         if (sourceIndex == targetIndex) {
+            log.info("List already at requested position: id={}, position={}, userId={}",
+                    id, targetIndex, userId);
             return toDTO(list);
         }
 

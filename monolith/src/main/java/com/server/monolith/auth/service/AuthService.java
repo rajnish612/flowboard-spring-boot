@@ -14,17 +14,19 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 public class AuthService {
-    private final UserRepo REMOVEDRepo;
+    private final UserRepo userRepo;
 
 
     //    METHOD TO RETRIEVE USER DETAILS FROM DB USING USER's EMAIL
-    public User retrieveUserThroughEmail(User user) {
-        Optional<User> existingUser = REMOVEDRepo.findByEmail(user.getEmail());
+    public User retrieveUserThroughEmailElseSave(User user) {
+        Optional<User> existingUser = userRepo.findByEmail(user.getEmail());
         if (existingUser.isPresent()) {
+            log.debug("User already exists with email: {}", user.getEmail());
             return existingUser.get();
         }
-        REMOVEDRepo.save(user);
-        log.info("Successfully retrieved or created REMOVED: {}", user.getEmail());
+        userRepo.save(user);
+
+        log.info("Created new user with email: {}", user.getEmail());
         return user;
 
     }

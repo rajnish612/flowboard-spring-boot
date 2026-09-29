@@ -9,6 +9,7 @@ import com.server.monolith.task.repository.ActivityRepo;
 import com.server.monolith.workspace.dto.BoardDTO;
 import com.server.monolith.workspace.service.BoardService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ActivityService {
@@ -35,6 +37,8 @@ public class ActivityService {
             String message,
             Long assignedTo
     ) {
+        log.info("Creating activity: type={}, userId={}, workspaceId={}, boardId={}",
+                type, userId, workspaceId, boardId);
 
         Activity activity = Activity.builder()
                 .userId(userId)
@@ -46,16 +50,19 @@ public class ActivityService {
                 .message(message)
                 .assignedTo(assignedTo)
                 .build();
-
-        return activityRepo.save(activity);
+        Activity savedActivity = activityRepo.save(activity);
+        log.info("Activity created successfully: activityId={}, type={}",
+                savedActivity.getId(), type);
+        return savedActivity;
     }
 
     // fetch activities using workspaceId
     public List<ActivityDTO> getActivitiesByWorkspaceId(Long workspaceId) {
-
+        log.info("Fetching activity for workspace with id: {}", workspaceId);
         List<Activity> activities =
                 activityRepo.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
         if (activities.isEmpty()) {
+            log.info("No activities found for workspaceId={}", workspaceId);
             return List.of();
         }
         List<Long> boardIds = activities.stream().map(Activity::getBoardId).filter(Objects::nonNull).distinct().toList();
@@ -81,7 +88,7 @@ public class ActivityService {
                                 Function.identity()
                         ));
 
-        return activities.stream()
+        List<ActivityDTO> result = activities.stream()
                 .map(activity -> toDTO(
                         activity,
                         usersMapped,
@@ -89,6 +96,10 @@ public class ActivityService {
                         boardsMapped
                 ))
                 .toList();
+        log.info("Fetched {} activities for workspaceId={}",
+                result.size(), workspaceId);
+        return result;
+
     }
 
     //for the purpose of converting Activity object into ActivityDTO object

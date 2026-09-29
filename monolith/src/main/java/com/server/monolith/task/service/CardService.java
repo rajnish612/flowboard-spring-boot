@@ -44,8 +44,13 @@ public class CardService {
 
     // Fetch all cards for a list, already ordered by position
     public List<CardDTO> getCardsByListId(Long listId) {
+        log.info("Fetching cards for listId={}", listId);
         List<Card> cards = cardRepo.findByListIdOrderByPositionAsc(listId);
-        //
+        if (cards.isEmpty()) {
+            log.debug("No cards found for listId={}", listId);
+            return List.of();
+        }
+
         List<Long> userIds = cards.stream()
                 .map(Card::getAssignedTo)
                 .filter(Objects::nonNull)
@@ -56,7 +61,7 @@ public class CardService {
                 .collect(Collectors.toMap(
                         UserDTO::getId,
                         Function.identity()));
-        return cards.stream()
+        List<CardDTO> result = cards.stream()
                 .map(card -> {
 
                     CardDTO dto = toDTO(card);
@@ -73,10 +78,15 @@ public class CardService {
                     return dto;
                 })
                 .toList();
+        log.info("Fetched {} cards for listId={}", result.size(), listId);
+        return result;
     }
 
     // Create a new card; auto-assigns the next position at the end of the list
     public CardDTO createCard(CardDTO dto, Long userId) {
+
+        log.info("Creating card for listId={}, userId={}",
+                dto.getListId(), userId);
         int nextPosition = cardRepo
                 .findMaxPositionByListId(dto.getListId())
                 .map(max -> max + 1)
@@ -116,6 +126,7 @@ public class CardService {
 
     // Update card fields (title, description, dueDate, assignedTo, position)
     public CardDTO updateCard(Long id, CardDTO dto, Long userId) {
+        log.info("Updating card: cardId={}, userId={}", id, userId);
         Card card = cardRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Card not found: " + id));
 
@@ -155,7 +166,8 @@ public class CardService {
                         "unassigned card \"" + updated.getTitle() + "\" from " + unassignedUser.getName(),
                         oldAssignedTo);
                 notificationService.processNotificationEvent(buildNotificationEvent(userId, workspace, board, NotificationType.CARD_UNASSIGNED, "Card unassigned", "unassigned card \"" + updated.getTitle() + "\" from \"" + unassignedUser.getName() + "\""));
-
+                log.info("Card unassigned: cardId={}, previousAssigneeId={}, userId={}",
+                        updated.getId(), oldAssignedTo, userId);
             } else {
 
                 UserDTO assignedUser = userService.getUserById(updated.getAssignedTo());
@@ -173,7 +185,8 @@ public class CardService {
                                 assignedUser.getName(),
                         updated.getAssignedTo());
                 notificationService.processNotificationEvent(buildNotificationEvent(userId, workspace, board, NotificationType.CARD_ASSIGNED, "Card assigned", "assigned card \"" + updated.getTitle() + "\" to \"" + assignedUser.getName() + "\""));
-
+                log.info("Card assigned: cardId={}, assignedTo={}, userId={}",
+                        updated.getId(), updated.getAssignedTo(), userId);
 
             }
 
@@ -188,9 +201,10 @@ public class CardService {
                     "Updated card \"" + updated.getTitle() + "\"",
                     null);
             notificationService.processNotificationEvent(buildNotificationEvent(userId, workspace, board, NotificationType.CARD_UPDATED, "Card updated", "Card updated \"" + updated.getTitle() + "\""));
-
+            log.info("Card details updated: cardId={}, userId={}",
+                    updated.getId(), userId);
         }
-        log.info("Updated card id = {}", id);
+        log.info("Card updated successfully: id={}, userId={}", id, userId);
         return toDTO(updated);
     }
 
@@ -216,7 +230,7 @@ public class CardService {
         cardRepo.deleteById(id);
         notificationService.processNotificationEvent(buildNotificationEvent(userId, workspace, board, NotificationType.CARD_DELETED, "Card deleted", "Card deleted \"" + card.getTitle() + "\""));
 
-        log.info("Deleted card id={}", id);
+        log.info("Card deleted successfully: cardId={}, userId={}", id, userId);
     }
 
     // Move a card to a target list at a specific position, reordering both source

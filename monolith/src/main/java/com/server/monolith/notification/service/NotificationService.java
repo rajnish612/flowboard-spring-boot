@@ -12,6 +12,7 @@ import com.server.monolith.workspace.dto.WorkspaceDTO;
 import com.server.monolith.workspace.service.BoardService;
 import com.server.monolith.workspace.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 
 
 //Service to manage notification
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
@@ -36,9 +38,16 @@ public class NotificationService {
     @Transactional
     public void processNotificationEvent(NotificationEvent event) {
 
+        log.info("Processing notification event: type={}, actorId={}, workspaceId={}",
+                event.getType(),
+                event.getActorId(),
+                event.getWorkspaceId());
+
+
         List<Long> recipientIds;
 
         if (event.getRecipientIds() == null || event.getRecipientIds().isEmpty()) {
+
             throw new IllegalArgumentException(
                     "recipientIds is required for a Kafka notification event"
             );
@@ -53,6 +62,7 @@ public class NotificationService {
                 .toList();
 
         if (recipientIds.isEmpty()) {
+            log.debug("No recipients after filtering actorId={}", event.getActorId());
             return;
         }
 
@@ -79,9 +89,8 @@ public class NotificationService {
                 .build();
 
 
-        /*
-         * Create one database notification for every recipient.
-         */
+        // Create one database notification for every recipient.
+
         List<Notification> notifications = recipientIds.stream()
                 .map(recipientId -> Notification.builder()
                         .recipientId(recipientId)
@@ -113,16 +122,20 @@ public class NotificationService {
                     dto
             );
         }
+        log.info("Notification event processed successfully: type={}, notificationsCreated={}",
+                event.getType(),
+                savedNotifications.size());
     }
 
 
     // Get all notifications of the authenticated user.
     public List<NotificationDTO> getNotifications(Long userId) {
-
+        log.info("Fetching notifications for user with id: {}", userId);
         //Get notifications
         List<Notification> notifications = notificationRepository
                 .findByRecipientIdOrderByCreatedAtDesc(userId);
         if (notifications.isEmpty()) {
+            log.info("No notifications found for user with id: {}", userId);
             return List.of();
         }
 
@@ -170,7 +183,7 @@ public class NotificationService {
 
 
         // 5. Build NotificationDTOs
-        return notifications.stream()
+        List<NotificationDTO> result = notifications.stream()
                 .filter(notification ->
                         notification.getWorkspaceId() != null
                                 && notification.getBoardId() != null
@@ -197,6 +210,8 @@ public class NotificationService {
                     );
                 })
                 .toList();
+        log.info("Fetched notifications {} for user with id: {}", notifications.size(), userId);
+        return result;
     }
 
 
@@ -209,7 +224,7 @@ public class NotificationService {
 
     // Get the unread notification count.
     public long getUnreadCount(Long userId) {
-
+        log.info("Fetching unread notifications count for user with id: {}", userId);
         return notificationRepository
                 .countByRecipientIdAndReadFalse(userId);
     }
@@ -218,7 +233,7 @@ public class NotificationService {
     // Mark one notification as read.
     @Transactional
     public void markAsRead(Long notificationId, Long userId) {
-
+        log.info("Marking notifications as read for user with id: {}", userId);
         int updatedRows =
                 notificationRepository.markAsRead(
                         notificationId,
@@ -226,6 +241,7 @@ public class NotificationService {
                 );
 
         if (updatedRows == 0) {
+            log.info("Notifications not found for userwith id: {}", userId);
             throw new IllegalArgumentException(
                     "Notification not found"
             );
@@ -236,7 +252,7 @@ public class NotificationService {
     // Mark all unread notifications as read.
     @Transactional
     public void markAllAsRead(Long userId) {
-
+        log.info("Marking all notifications as read for user with id: {}", userId);
         notificationRepository.markAllAsRead(userId);
     }
 

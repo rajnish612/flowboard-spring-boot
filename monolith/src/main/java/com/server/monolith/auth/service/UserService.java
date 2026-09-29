@@ -23,21 +23,29 @@ public class UserService {
     //Method to get user by id
     public UserDTO getUserById(Long id) {
         return userRepo.findById(id)
-                .map(u -> UserDTO.builder()
-                        .name(u.getName())
-                        .email(u.getEmail())
-                        .avatar(u.getAvatar())
-                        .build())
-                .orElseThrow(() -> new EntityNotFoundException("User not found: " + id));
+                .map(u -> {
+                    log.info("Fetched user with id: {}", id);
+                    return UserDTO.builder()
+                            .name(u.getName())
+                            .email(u.getEmail())
+                            .avatar(u.getAvatar())
+                            .id(id)
+                            .build();
+                }).orElseThrow(() -> {
+                    log.warn("user not found with id: {}", id);
+                    return new EntityNotFoundException("User not found: " + id);
+                });
     }
 
     //Method to get users by user Ids
     public List<UserDTO> getUsersByIds(List<Long> userIds) {
+        log.info("Fetching users for {} user IDs", userIds.size());
         return userRepo.findAllByIdIn(userIds).stream().map(u -> UserDTO.builder().name(u.getName()).email(u.getEmail()).id(u.getId()).avatar(u.getAvatar()).build()).toList();
     }
 
     //Find users by email
-    public List<UserDTO> searchUsersByEmail(String email, String excludedEmail) {
+    public List<UserDTO> searchUserByEmail(String email, String excludedEmail) {
+        log.info("fetching user with email: {} and not equal to: {}", email, excludedEmail);
         return userRepo.findByEmailStartingWithIgnoreCaseAndEmailNot(email, excludedEmail).stream().map(user -> UserDTO.builder()
                 .id(user.getId())
                 .name(user.getName())
@@ -49,8 +57,12 @@ public class UserService {
 
     //Method to get user by email
     public UserDTO getUserByEmail(String email) {
-        User user = userRepo.findByEmail(email).orElseThrow(() ->
-            new EntityNotFoundException("User not found with email: " + email));
+        log.info("Fetching user with email: {}", email);
+        User user = userRepo.findByEmail(email).orElseThrow(() -> {
+            log.warn("user not found with email: {}", email);
+
+            return new EntityNotFoundException("User not found with email: " + email);
+        });
 
         return UserDTO.builder()
                 .id(user.getId())

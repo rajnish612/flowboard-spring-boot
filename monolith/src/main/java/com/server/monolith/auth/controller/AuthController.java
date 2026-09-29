@@ -42,11 +42,8 @@ public class AuthController {
 
         log.info("Authenticated user with email: {}", email);
         assert userId != null;
-        User user = userRepo.findById(userId).orElseThrow(() -> new UsernameNotFoundException("Email not found "));
-        UserDTO profile = UserDTO.builder().name(user.getName()).email(user.getEmail()).avatar(user.getAvatar())
-                .id(user.getId()).build();
-        log.info("Retrieved profile for user with email: {}", email);
-        return ResponseEntity.ok(profile);
+
+        return ResponseEntity.ok(userService.getUserById(userId));
     }
 
     // Endpoint to get single profile using user Id
@@ -72,9 +69,9 @@ public class AuthController {
     // Endpoint to search users by email
     @GetMapping("/user/search/{email}")
     public ResponseEntity<List<UserDTO>> searchUsersByEmail(@PathVariable("email") String email,
-            @AuthenticationPrincipal Jwt jwt) {
+                                                            @AuthenticationPrincipal Jwt jwt) {
         String userEmail = jwt.getSubject();
-        return ResponseEntity.ok(userService.searchUsersByEmail(email, userEmail));
+        return ResponseEntity.ok(userService.searchUserByEmail(email, userEmail));
     }
 
     // Endpoint to logout user

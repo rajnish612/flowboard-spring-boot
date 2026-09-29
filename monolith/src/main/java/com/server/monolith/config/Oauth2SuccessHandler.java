@@ -36,10 +36,11 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
     // METHOD TO GENERATE JWT AND REDIRECT AFTER SUCCESSFULL OAUTH AUTHENTICATION
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-            Authentication authentication) throws IOException, ServletException {
+                                        Authentication authentication) throws IOException, ServletException {
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
         String email = oidcUser.getEmail();
         if (email == null) {
+            log.warn("login failed email not provided by google");
             throw new IllegalStateException("Email not provided by Google");
         }
         String name = oidcUser.getFullName();
@@ -49,7 +50,7 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
                 .email(email)
                 .avatar(avatar)
                 .build();
-        User oauthUser = authService.retrieveUserThroughEmail(user);
+        User oauthUser = authService.retrieveUserThroughEmailElseSave(user);
         String token = jwtService.generateToken(oauthUser.getId(), oauthUser.getEmail());
         ResponseCookie cookie = ResponseCookie.from("AUTH_TOKEN", token)
                 .httpOnly(true)

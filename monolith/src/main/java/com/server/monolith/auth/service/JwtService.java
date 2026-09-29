@@ -3,6 +3,7 @@ package com.server.monolith.auth.service;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +11,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 
 // Service responsible for generating application JWTs
+@Slf4j
 @Service
 public class JwtService {
 
@@ -29,7 +31,7 @@ public class JwtService {
 
     // Generate a signed JWT containing the REMOVED's email as the subject
     public String generateToken(Long userId, String email) {
-
+        log.info("Generate JWT Token for user with id: {} and email: {}", userId, email);
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expiration);
 
