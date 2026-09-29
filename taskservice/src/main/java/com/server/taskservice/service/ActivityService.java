@@ -10,6 +10,8 @@ import com.server.taskservice.model.Activity;
 import com.server.taskservice.model.ActivityType;
 import com.server.taskservice.repository.ActivityRepo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,139 +20,141 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ActivityService {
 
-    private final ActivityRepo activityRepo;
-    private final AuthClient authClient;
-    private final WorkspaceClient workspaceClient;
+        private final ActivityRepo activityRepo;
+        private final AuthClient authClient;
+        private final WorkspaceClient workspaceClient;
 
-    public Activity createActivity(
-            Long userId,
-            Long workspaceId,
-            Long boardId,
-            Long listId,
-            Long cardId,
-            ActivityType type,
-            String message,
-            Long assignedTo
-    ) {
+        public Activity createActivity(
+                        Long userId,
+                        Long workspaceId,
+                        Long boardId,
+                        Long listId,
+                        Long cardId,
+                        ActivityType type,
+                        String message,
+                        Long assignedTo) {
+                log.info("Creating activity: type={}, userId={}, workspaceId={}, boardId={}",
+                                type, userId, workspaceId, boardId);
+                Activity activity = Activity.builder()
+                                .userId(userId)
+                                .workspaceId(workspaceId)
+                                .boardId(boardId)
+                                .listId(listId)
+                                .cardId(cardId)
+                                .type(type)
+                                .message(message)
+                                .assignedTo(assignedTo)
+                                .build();
 
-        Activity activity = Activity.builder()
-                .userId(userId)
-                .workspaceId(workspaceId)
-                .boardId(boardId)
-                .listId(listId)
-                .cardId(cardId)
-                .type(type)
-                .message(message)
-                .assignedTo(assignedTo)
-                .build();
-
-        return activityRepo.save(activity);
-    }
-
-    // fetch activities using workspaceId
-    public List<ActivityDTO> getActivitiesByWorkspaceId(Long workspaceId) {
-
-        List<Activity> activities =
-                activityRepo.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
-        if (activities.isEmpty()) {
-            return List.of();
+                Activity savedActivity = activityRepo.save(activity);
+                log.info("Activity created successfully: activityId={}, type={}",
+                                savedActivity.getId(), type);
+                return savedActivity;
         }
-        List<Long> boardIds = activities.stream().map(Activity::getBoardId).filter(Objects::nonNull).distinct().toList();
-        List<Long> userIds = activities.stream().map(Activity::getUserId).filter(Objects::nonNull).distinct().toList();
-        List<Long> assignedToIds = activities.stream().map(Activity::getAssignedTo).filter(Objects::nonNull).distinct().toList();
-        List<UserDTO> users = authClient.getUsersByIds(userIds);
-        List<BoardDTO> boards = workspaceClient.getBoardsByBoardsId(boardIds);
-        List<UserDTO> assignedToUsers =
-                assignedToIds.isEmpty()
-                        ? List.of()
-                        : authClient.getUsersByIds(assignedToIds);
 
-        Map<Long, BoardDTO> boardsMapped = boards.stream().collect(Collectors.toMap(BoardDTO::getId, Function.identity()));
-        Map<Long, UserDTO> usersMapped = users.stream()
-                .collect(Collectors.toMap(
-                        UserDTO::getId,
-                        Function.identity()
-                ));
-        Map<Long, UserDTO> assignedToUsersMapped =
-                assignedToUsers.stream()
-                        .collect(Collectors.toMap(
-                                UserDTO::getId,
-                                Function.identity()
-                        ));
+        // fetch activities using workspaceId
+        public List<ActivityDTO> getActivitiesByWorkspaceId(Long workspaceId) {
+                log.info("Fetching activity for workspace with id: {}", workspaceId);
 
-        return activities.stream()
-                .map(activity -> toDTO(
-                        activity,
-                        usersMapped,
-                        assignedToUsersMapped,
-                        boardsMapped
-                ))
-                .toList();
-    }
+                List<Activity> activities = activityRepo.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
+                if (activities.isEmpty()) {
+                        log.info("No activities found for workspaceId={}", workspaceId);
 
-    //for the purpose of converting Activity object into ActivityDTO object
-    private ActivityDTO toDTO(Activity activity, Map<Long, UserDTO> usersMapped,
-                              Map<Long, UserDTO> assignedToUsersMapped, Map<Long, BoardDTO> boardsMapped
+                        return List.of();
+                }
+                List<Long> boardIds = activities.stream().map(Activity::getBoardId).filter(Objects::nonNull).distinct()
+                                .toList();
+                List<Long> userIds = activities.stream().map(Activity::getUserId).filter(Objects::nonNull).distinct()
+                                .toList();
+                List<Long> assignedToIds = activities.stream().map(Activity::getAssignedTo).filter(Objects::nonNull)
+                                .distinct().toList();
+                List<UserDTO> users = authClient.getUsersByIds(userIds);
+                List<BoardDTO> boards = workspaceClient.getBoardsByBoardsId(boardIds);
+                List<UserDTO> assignedToUsers = assignedToIds.isEmpty()
+                                ? List.of()
+                                : authClient.getUsersByIds(assignedToIds);
 
-    ) {
+                Map<Long, BoardDTO> boardsMapped = boards.stream()
+                                .collect(Collectors.toMap(BoardDTO::getId, Function.identity()));
+                Map<Long, UserDTO> usersMapped = users.stream()
+                                .collect(Collectors.toMap(
+                                                UserDTO::getId,
+                                                Function.identity()));
+                Map<Long, UserDTO> assignedToUsersMapped = assignedToUsers.stream()
+                                .collect(Collectors.toMap(
+                                                UserDTO::getId,
+                                                Function.identity()));
 
-        UserDTO actor =
-                usersMapped.get(activity.getUserId());
+                List<ActivityDTO> result = activities.stream()
+                                .map(activity -> toDTO(
+                                                activity,
+                                                usersMapped,
+                                                assignedToUsersMapped,
+                                                boardsMapped))
+                                .toList();
+                log.info("Fetched {} activities for workspaceId={}",
+                                result.size(), workspaceId);
+                return result;
+        }
 
-        UserDTO assignedUser =
-                assignedToUsersMapped.get(activity.getAssignedTo());
+        // for the purpose of converting Activity object into ActivityDTO object
+        private ActivityDTO toDTO(Activity activity, Map<Long, UserDTO> usersMapped,
+                        Map<Long, UserDTO> assignedToUsersMapped, Map<Long, BoardDTO> boardsMapped
 
-        String boardName = boardsMapped.get(activity.getBoardId()).getName();
-        return ActivityDTO.builder()
-                .id(activity.getId())
-                .userId(activity.getUserId())
-                .userName(actor.getName())
-                .userAvatar(actor.getAvatar())
-                .assignedTo(activity.getAssignedTo())
-                .action(getAction(activity.getType()))
-                .message(activity.getMessage())
+        ) {
 
-                .assignedToName(
-                        assignedUser != null
-                                ? assignedUser.getName()
-                                : null
-                )
-                .assignedToAvatar(
-                        assignedUser != null
-                                ? assignedUser.getAvatar()
-                                : null
-                )
+                UserDTO actor = usersMapped.get(activity.getUserId());
 
-                .boardName(boardName)
-                .createdAt(activity.getCreatedAt())
-                .type(activity.getType())
-                .build();
-    }
+                UserDTO assignedUser = assignedToUsersMapped.get(activity.getAssignedTo());
 
-    private String getAction(ActivityType type) {
+                String boardName = boardsMapped.get(activity.getBoardId()).getName();
+                return ActivityDTO.builder()
+                                .id(activity.getId())
+                                .userId(activity.getUserId())
+                                .userName(actor.getName())
+                                .userAvatar(actor.getAvatar())
+                                .assignedTo(activity.getAssignedTo())
+                                .action(getAction(activity.getType()))
+                                .message(activity.getMessage())
 
-        return switch (type) {
-            case CARD_CREATED, LIST_CREATED -> "CREATED";
-            case CARD_UPDATED, LIST_UPDATED -> "UPDATED";
-            case CARD_MOVED, LIST_MOVED -> "MOVED";
-            case CARD_ASSIGNED -> "ASSIGNED";
-            case CARD_UNASSIGNED -> "UNASSIGNED";
-            case CARD_DELETED, LIST_DELETED -> "DELETED";
-        };
-    }
+                                .assignedToName(
+                                                assignedUser != null
+                                                                ? assignedUser.getName()
+                                                                : null)
+                                .assignedToAvatar(
+                                                assignedUser != null
+                                                                ? assignedUser.getAvatar()
+                                                                : null)
 
+                                .boardName(boardName)
+                                .createdAt(activity.getCreatedAt())
+                                .type(activity.getType())
+                                .build();
+        }
 
-//    private String getBoardName(
-//            WorkspaceDTO workspace,
-//            Long boardId
-//    ) {
-//        // Replace this once Workspace Service exposes board lookup.
-//        return "Board " + boardId;
-//    }
+        private String getAction(ActivityType type) {
 
+                return switch (type) {
+                        case CARD_CREATED, LIST_CREATED -> "CREATED";
+                        case CARD_UPDATED, LIST_UPDATED -> "UPDATED";
+                        case CARD_MOVED, LIST_MOVED -> "MOVED";
+                        case CARD_ASSIGNED -> "ASSIGNED";
+                        case CARD_UNASSIGNED -> "UNASSIGNED";
+                        case CARD_DELETED, LIST_DELETED -> "DELETED";
+                };
+        }
+
+        // private String getBoardName(
+        // WorkspaceDTO workspace,
+        // Long boardId
+        // ) {
+        // // Replace this once Workspace Service exposes board lookup.
+        // return "Board " + boardId;
+        // }
 
 }

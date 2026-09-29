@@ -1,6 +1,8 @@
-package com.server.authservice.service;
+package com.server.authservice.configuration;
 
 import com.server.authservice.model.User;
+import com.server.authservice.service.AuthService;
+import com.server.authservice.service.JwtService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -33,9 +34,12 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
     private boolean cookieSecure;
 
     // METHOD TO GENERATE JWT AND REDIRECT AFTER SUCCESSFULL OAUTH AUTHENTICATION
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-            Authentication authentication) throws IOException, ServletException {
+                                        Authentication authentication) throws IOException, ServletException {
+
+       
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
         String email = oidcUser.getEmail();
         if (email == null) {
@@ -48,16 +52,18 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
                 .email(email)
                 .avatar(avatar)
                 .build();
-        User oauthUser = authService.retrieveUserThroughEmail(user);
+        User oauthUser = authService.retrieveUserThroughEmailElseSave(user);
         String token = jwtService.generateToken(oauthUser.getId(), oauthUser.getEmail());
         ResponseCookie cookie = ResponseCookie.from("AUTH_TOKEN", token)
                 .httpOnly(true)
                 .secure(cookieSecure) // true in HTTPS production
                 .path("/")
                 .sameSite(cookieSameSite)
+                .sameSite(cookieSameSite)
                 .maxAge(Duration.ofHours(1))
                 .build();
 
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString()); // Saving the token inside cookie
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString()); // Saving the token inside cookie
         log.info("OAuth login successful for {}, redirecting to React", email);
         response.sendRedirect(clientUri + "/oauth-success");

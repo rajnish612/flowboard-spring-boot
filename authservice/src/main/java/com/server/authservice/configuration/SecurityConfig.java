@@ -1,7 +1,5 @@
 package com.server.authservice.configuration;
 
-
-import com.server.authservice.service.Oauth2SuccessHandler;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -9,17 +7,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
 import javax.crypto.SecretKey;
-
 
 //CUSTOM SECURITY CONFIG TO USED BY SPRING SECURITY
 @Slf4j
@@ -31,23 +30,31 @@ public class SecurityConfig {
     private String clientUri;
     private final Oauth2SuccessHandler oauth2SuccessHandler;
 
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http.csrf(csrf -> csrf.disable())
-                .formLogin(formLogin -> formLogin.disable()).authorizeHttpRequests(auth -> auth.requestMatchers("/login/**", "/oauth2/**").permitAll().anyRequest().authenticated()).oauth2Login(oauth -> oauth.failureHandler(((request, response, exception) -> {
+                .formLogin(formLogin -> formLogin.disable()).authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/login/**", "/oauth2/**").permitAll().anyRequest().authenticated())
+                .oauth2Login(oauth -> oauth.failureHandler(((request, response, exception) -> {
                     log.error("Login failed: {}", exception.getMessage());
                     response.sendRedirect(clientUri + "/login?error=oauth");
                 })).successHandler(oauth2SuccessHandler))
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exception -> exception
+                        .defaultAuthenticationEntryPointFor(
+                                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
+                                request -> request.getRequestURI().startsWith("/")
+
+                        ))
                 .logout(AbstractHttpConfigurer::disable)// CUSTOM HANDLER AFTER SUCCESSFUL OAUTH2 AUTHENTICATION
                 .oauth2ResourceServer(oauth -> oauth
                         .jwt(jwt -> {
-                        }));  // ENABLES JWT BEARER-TOKEN AUTHENTICATION
+                        })); // ENABLES JWT BEARER-TOKEN AUTHENTICATION
 
         ;
         return http.build();
     }
-
 
     // CUSTOM JWT DECODER USED BY SPRING SECURITY TO VALIDATE JWTs
     @Bean

@@ -27,224 +27,235 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BoardListService {
 
-    private final BoardListRepo boardListRepo;
-    private final CardRepo cardRepo;
-    private final ActivityService activityService;
-    private final AuthClient authClient;
-    private final WorkspaceClient workspaceClient;
-    private final NotificationEventPublisher notificationEventPublisher;
+        private final BoardListRepo boardListRepo;
+        private final CardRepo cardRepo;
+        private final ActivityService activityService;
+        private final AuthClient authClient;
+        private final WorkspaceClient workspaceClient;
+        private final NotificationEventPublisher notificationEventPublisher;
 
-    // Fetch all lists for a board, already ordered by position
-    public List<BoardListDTO> getListsByBoardId(Long boardId) {
-        return boardListRepo.findByBoardIdOrderByPositionAsc(boardId)
-                .stream()
-                .map(this::toDTO)
-                .toList();
-    }
+        // Fetch all lists for a board, already ordered by position
+        public List<BoardListDTO> getListsByBoardId(Long boardId) {
+                log.info("Fetching lists for board with id: {}", boardId);
 
-    // Create a new list; auto-assigns the next position at the end
-    public BoardListDTO createList(BoardListDTO dto, Long userId) {
-        int nextPosition = boardListRepo
-                .findMaxPositionByBoardId(dto.getBoardId())
-                .map(max -> max + 1)
-                .orElse(0);
-
-        BoardList list = BoardList.builder()
-                .boardId(dto.getBoardId())
-                .name(dto.getName())
-                .position(nextPosition)
-                .build();
-
-        BoardList saved = boardListRepo.save(list);
-
-        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(dto.getBoardId());
-        activityService.createActivity(
-                userId,
-                workspace.getId(),
-                saved.getBoardId(),
-                saved.getId(),
-                null,
-                ActivityType.LIST_CREATED,
-                "created list \"" + saved.getName() + "\"",
-                null);
-        notificationEventPublisher.publish(
-                buildNotificationEvent(
-                        userId,
-                        workspace,
-                        getBoard(saved.getBoardId()),
-                        NotificationType.LIST_CREATED,
-                        "New list created",
-                        "created list \"" + saved.getName() + "\""));
-
-        log.info("Created list '{}' at position {} for board {}", saved.getName(), saved.getPosition(),
-                saved.getBoardId());
-        return toDTO(saved);
-    }
-
-    // Update the name (and optionally position) of a list
-    public BoardListDTO updateList(Long id, BoardListDTO dto, Long userId) {
-        BoardList list = boardListRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
-
-        if (dto.getName() != null && !dto.getName().isBlank()) {
-            list.setName(dto.getName());
+                List<BoardListDTO> result = boardListRepo.findByBoardIdOrderByPositionAsc(boardId)
+                                .stream()
+                                .map(this::toDTO)
+                                .toList();
+                log.info("Fetched {} lists for board with id: {}", result.size(), boardId);
+                return result;
         }
 
-        BoardList updated = boardListRepo.save(list);
+        // Create a new list; auto-assigns the next position at the end
+        public BoardListDTO createList(BoardListDTO dto, Long userId) {
+                log.info("Creating list name: {} boardId: {} by user: {}", dto.getName(), dto.getBoardId(), userId);
 
-        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
-        activityService.createActivity(
-                userId,
-                workspace.getId(),
-                updated.getBoardId(),
-                updated.getId(),
-                null,
-                ActivityType.LIST_UPDATED,
-                "Updated list \"" + updated.getName() + "\"",
-                null);
+                int nextPosition = boardListRepo
+                                .findMaxPositionByBoardId(dto.getBoardId())
+                                .map(max -> max + 1)
+                                .orElse(0);
 
-        notificationEventPublisher.publish(
-                buildNotificationEvent(
-                        userId,
-                        workspace,
-                        getBoard(updated.getBoardId()),
-                        NotificationType.LIST_UPDATED,
-                        "List updated",
-                        "updated list \"" + updated.getName() + "\""));
-        log.info("Updated list id={}", id);
-        return toDTO(updated);
-    }
+                BoardList list = BoardList.builder()
+                                .boardId(dto.getBoardId())
+                                .name(dto.getName())
+                                .position(nextPosition)
+                                .build();
 
-    // Delete a list and all its cards (cascaded manually since entities are in the
-    // same service)
-    @Transactional
-    public void deleteList(Long id, Long userId) {
-        BoardList list = boardListRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
+                BoardList saved = boardListRepo.save(list);
 
-        Long boardId = list.getBoardId();
-        String listName = list.getName();
-        // Remove all cards belonging to this list first
-        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
-        activityService.createActivity(
-                userId,
-                workspace.getId(),
-                list.getBoardId(),
-                list.getId(),
-                null,
-                ActivityType.LIST_DELETED,
-                "Deleted list \"" + list.getName() + "\"",
-                null);
-        cardRepo.deleteByListId(id);
-        boardListRepo.delete(list);
-        notificationEventPublisher.publish(
-                buildNotificationEvent(
-                        userId,
-                        workspace,
-                        getBoard(boardId),
-                        NotificationType.LIST_DELETED,
-                        "List deleted",
-                        "deleted list \"" + listName + "\""));
-
-        log.info("Deleted list id={} and its cards", id);
-    }
-
-    // Move a list to a new position, shifting siblings accordingly
-    @Transactional
-    public BoardListDTO reorderList(Long id, int newPosition, Long userId) {
-        BoardList list = boardListRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
-
-        List<BoardList> siblings = boardListRepo.findByBoardIdOrderByPositionAsc(list.getBoardId());
-        int sourceIndex = siblings.stream()
-                .map(BoardList::getId)
-                .toList()
-                .indexOf(id);
-        if (sourceIndex < 0) {
-            throw new EntityNotFoundException("List not found in board: " + id);
-        }
-        int targetIndex = Math.max(0, Math.min(newPosition, siblings.size() - 1));
-        if (sourceIndex == targetIndex) {
-            return toDTO(list);
+                WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(dto.getBoardId());
+                activityService.createActivity(
+                                userId,
+                                workspace.getId(),
+                                saved.getBoardId(),
+                                saved.getId(),
+                                null,
+                                ActivityType.LIST_CREATED,
+                                "created list \"" + saved.getName() + "\"",
+                                null);
+                notificationEventPublisher.publish(
+                                buildNotificationEvent(
+                                                userId,
+                                                workspace,
+                                                getBoard(saved.getBoardId()),
+                                                NotificationType.LIST_CREATED,
+                                                "New list created",
+                                                "created list \"" + saved.getName() + "\""));
+                log.info("Created list '{}' at position {} for board {}", saved.getName(), saved.getPosition(),
+                                saved.getBoardId());
+                return toDTO(saved);
         }
 
-        siblings.remove(sourceIndex);
-        siblings.add(targetIndex, list);
+        // Update the name (and optionally position) of a list
+        public BoardListDTO updateList(Long id, BoardListDTO dto, Long userId) {
+                log.info("Updating list id={} by userId={}", id, userId);
 
-        int temporaryStart = siblings.stream()
-                .mapToInt(BoardList::getPosition)
-                .max()
-                .orElse(0) + siblings.size() + 1;
-        for (int index = 0; index < siblings.size(); index++) {
-            siblings.get(index).setPosition(temporaryStart + index);
+                BoardList list = boardListRepo.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
+
+                if (dto.getName() != null && !dto.getName().isBlank()) {
+                        list.setName(dto.getName());
+                }
+
+                BoardList updated = boardListRepo.save(list);
+
+                WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+                activityService.createActivity(
+                                userId,
+                                workspace.getId(),
+                                updated.getBoardId(),
+                                updated.getId(),
+                                null,
+                                ActivityType.LIST_UPDATED,
+                                "Updated list \"" + updated.getName() + "\"",
+                                null);
+
+                notificationEventPublisher.publish(
+                                buildNotificationEvent(
+                                                userId,
+                                                workspace,
+                                                getBoard(updated.getBoardId()),
+                                                NotificationType.LIST_UPDATED,
+                                                "List updated",
+                                                "updated list \"" + updated.getName() + "\""));
+                log.info("List updated successfully: id={}, name={}, userId={}",
+                                updated.getId(), updated.getName(), userId);
+                return toDTO(updated);
         }
-        boardListRepo.saveAllAndFlush(siblings);
 
-        for (int index = 0; index < siblings.size(); index++) {
-            siblings.get(index).setPosition(index);
+        // Delete a list and all its cards (cascaded manually since entities are in the
+        // same service)
+        @Transactional
+        public void deleteList(Long id, Long userId) {
+                BoardList list = boardListRepo.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
+
+                Long boardId = list.getBoardId();
+                String listName = list.getName();
+                // Remove all cards belonging to this list first
+                WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+                activityService.createActivity(
+                                userId,
+                                workspace.getId(),
+                                list.getBoardId(),
+                                list.getId(),
+                                null,
+                                ActivityType.LIST_DELETED,
+                                "Deleted list \"" + list.getName() + "\"",
+                                null);
+                cardRepo.deleteByListId(id);
+                boardListRepo.delete(list);
+                notificationEventPublisher.publish(
+                                buildNotificationEvent(
+                                                userId,
+                                                workspace,
+                                                getBoard(boardId),
+                                                NotificationType.LIST_DELETED,
+                                                "List deleted",
+                                                "deleted list \"" + listName + "\""));
+
+                log.info("Deleted list id={} and its cards", id);
         }
-        boardListRepo.saveAll(siblings);
-        WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
-        activityService.createActivity(
-                userId,
-                workspace.getId(),
-                list.getBoardId(),
-                list.getId(),
-                null,
-                ActivityType.LIST_MOVED,
-                "Moved list \"" + list.getName() + "\"",
-                null);
-        notificationEventPublisher.publish(
-                buildNotificationEvent(
-                        userId,
-                        workspace,
-                        getBoard(list.getBoardId()),
-                        NotificationType.LIST_MOVED,
-                        "List moved",
-                        "moved list \"" + list.getName() + "\""));
-        log.info("Reordered list id={} to position {}", id, targetIndex);
-        return toDTO(list);
-    }
 
-    private NotificationEvent buildNotificationEvent(
-            Long userId,
-            WorkspaceDTO workspace,
-            BoardDTO board,
-            NotificationType type,
-            String title,
-            String message) {
-        UserDTO actor = authClient.getProfile(userId);
-        return NotificationEvent.builder()
-                .actorId(userId)
-                .actorName(actor.getName())
-                .actorAvatar(actor.getAvatar())
-                .workspaceId(workspace.getId())
-                .workspaceName(workspace.getName())
-                .boardId(board != null ? board.getId() : null)
-                .boardName(board != null ? board.getName() : null)
-                .type(type)
-                .title(title)
-                .message("User " + actor.getName() + " " + message)
-                .recipientIds(workspaceClient.getWorkspaceMemberIds(workspace.getId()))
-                .build();
-    }
+        // Move a list to a new position, shifting siblings accordingly
+        @Transactional
+        public BoardListDTO reorderList(Long id, int newPosition, Long userId) {
+                BoardList list = boardListRepo.findById(id)
+                                .orElseThrow(() -> new EntityNotFoundException("List not found: " + id));
 
-    private BoardDTO getBoard(Long boardId) {
-        return workspaceClient.getBoardsByBoardsId(List.of(boardId))
-                .stream()
-                .findFirst()
-                .orElse(null);
-    }
+                List<BoardList> siblings = boardListRepo.findByBoardIdOrderByPositionAsc(list.getBoardId());
+                int sourceIndex = siblings.stream()
+                                .map(BoardList::getId)
+                                .toList()
+                                .indexOf(id);
+                if (sourceIndex < 0) {
+                        throw new EntityNotFoundException("List not found in board: " + id);
+                }
+                int targetIndex = Math.max(0, Math.min(newPosition, siblings.size() - 1));
+                if (sourceIndex == targetIndex) {
+                        log.info("List already at requested position: id={}, position={}, userId={}",
+                                        id, targetIndex, userId);
+                        return toDTO(list);
+                }
 
-    // Helper: convert entity to DTO
-    private BoardListDTO toDTO(BoardList list) {
-        return BoardListDTO.builder()
-                .id(list.getId())
-                .boardId(list.getBoardId())
-                .name(list.getName())
-                .position(list.getPosition())
-                .createdAt(list.getCreatedAt())
-                .updatedAt(list.getUpdatedAt())
-                .build();
-    }
+                siblings.remove(sourceIndex);
+                siblings.add(targetIndex, list);
+
+                int temporaryStart = siblings.stream()
+                                .mapToInt(BoardList::getPosition)
+                                .max()
+                                .orElse(0) + siblings.size() + 1;
+                for (int index = 0; index < siblings.size(); index++) {
+                        siblings.get(index).setPosition(temporaryStart + index);
+                }
+                boardListRepo.saveAllAndFlush(siblings);
+
+                for (int index = 0; index < siblings.size(); index++) {
+                        siblings.get(index).setPosition(index);
+                }
+                boardListRepo.saveAll(siblings);
+                WorkspaceDTO workspace = workspaceClient.getWorkspaceByBoardId(list.getBoardId());
+                activityService.createActivity(
+                                userId,
+                                workspace.getId(),
+                                list.getBoardId(),
+                                list.getId(),
+                                null,
+                                ActivityType.LIST_MOVED,
+                                "Moved list \"" + list.getName() + "\"",
+                                null);
+                notificationEventPublisher.publish(
+                                buildNotificationEvent(
+                                                userId,
+                                                workspace,
+                                                getBoard(list.getBoardId()),
+                                                NotificationType.LIST_MOVED,
+                                                "List moved",
+                                                "moved list \"" + list.getName() + "\""));
+                log.info("Reordered list id={} to position {}", id, targetIndex);
+
+                return toDTO(list);
+        }
+
+        private NotificationEvent buildNotificationEvent(
+                        Long userId,
+                        WorkspaceDTO workspace,
+                        BoardDTO board,
+                        NotificationType type,
+                        String title,
+                        String message) {
+                UserDTO actor = authClient.getProfile(userId);
+                return NotificationEvent.builder()
+                                .actorId(userId)
+                                .actorName(actor.getName())
+                                .actorAvatar(actor.getAvatar())
+                                .workspaceId(workspace.getId())
+                                .workspaceName(workspace.getName())
+                                .boardId(board != null ? board.getId() : null)
+                                .boardName(board != null ? board.getName() : null)
+                                .type(type)
+                                .title(title)
+                                .message("User " + actor.getName() + " " + message)
+                                .recipientIds(workspaceClient.getWorkspaceMemberIds(workspace.getId()))
+                                .build();
+        }
+
+        private BoardDTO getBoard(Long boardId) {
+                return workspaceClient.getBoardsByBoardsId(List.of(boardId))
+                                .stream()
+                                .findFirst()
+                                .orElse(null);
+        }
+
+        // Helper: convert entity to DTO
+        private BoardListDTO toDTO(BoardList list) {
+                return BoardListDTO.builder()
+                                .id(list.getId())
+                                .boardId(list.getBoardId())
+                                .name(list.getName())
+                                .position(list.getPosition())
+                                .createdAt(list.getCreatedAt())
+                                .updatedAt(list.getUpdatedAt())
+                                .build();
+        }
 }

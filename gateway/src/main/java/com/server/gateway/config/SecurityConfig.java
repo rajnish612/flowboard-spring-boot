@@ -44,9 +44,12 @@ public class SecurityConfig {
                 config.setAllowedMethods(
                                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
-                config.setAllowedHeaders(List.of("*"));
-                config.setAllowCredentials(true);
-                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        config.setAllowedHeaders(
+                List.of("*")
+        );
+        config.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
 
                 source.registerCorsConfiguration("/**", config);
 

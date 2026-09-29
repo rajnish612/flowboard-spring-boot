@@ -13,6 +13,8 @@ import com.server.workspaceservice.exception.BusinessRuleException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -22,215 +24,283 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 //Service for the management of workspaces
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WorkspaceService {
 
-    private final WorkSpaceRepo workSpaceRepo;
-    private final BoardRepo boardRepo;
-    private final WorkspaceMemberRepo workspaceMemberRepo;
-    private final AuthClient authClient;
+        private final WorkSpaceRepo workSpaceRepo;
+        private final BoardRepo boardRepo;
+        private final WorkspaceMemberRepo workspaceMemberRepo;
+        private final AuthClient authClient;
 
+        // Method to fetch workspace usign workspace id
+        public WorkspaceDTO getWorkspaceByWorkspaceId(Long workspaceId) {
+                log.info("Fetching workspace: workspaceId={}", workspaceId);
 
-    //Method to fetch workspace usign workspace id
-    public WorkspaceDTO getWorkspaceByWorkspaceId(Long workspaceId) {
-        return workSpaceRepo.findById(workspaceId).map(w -> WorkspaceDTO.builder().id(w.getId()).name(w.getName()).ownerId(w.getOwnerId()).updatedAt(w.getUpdatedAt()).createdAt(w.getCreatedAt()).build()).orElseThrow(() -> new EntityNotFoundException("Workspace not found with id: " + workspaceId));
-
-    }
-
-    //Method to get workspace using board id
-    public WorkspaceDTO getWorkspaceByBoardId(Long boardId) {
-
-        Board board = boardRepo.findById(boardId)
-                .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Board not found: " + boardId
-                        )
-                );
-
-        return workSpaceRepo.findById(board.getWorkspaceId()).map(w -> WorkspaceDTO.builder().name(w.getName()).id(w.getId()).ownerId(w.getOwnerId()).build()).orElseThrow(() ->
-                new EntityNotFoundException(
-                        "Board not found: " + boardId
-                )
-        );
-
-    }
-
-    //Method to delete workspace
-    @Transactional
-    public void deleteWorkspace(Long id, Long userId) {
-        boolean hasAccess = workSpaceRepo.checkIsOwner(userId, id);
-        if (!hasAccess) {
-            throw new AccessDeniedException("You are not the owner of this workspace");
-        }
-        boardRepo.deleteByWorkspaceId(id);
-        workspaceMemberRepo.deleteByWorkspaceId(id);
-        workSpaceRepo.deleteById(id);
-    }
-
-    //Method to create new workspace
-    @Transactional
-    public WorkspaceDTO createWorkspace(WorkspaceDTO workspaceDTO, Long userId) {
-        Workspace workspace = Workspace.builder()
-                .name(workspaceDTO.getName())
-                .ownerId(workspaceDTO.getOwnerId())
-                .build();
-
-        Workspace newWorkspace = workSpaceRepo.save(workspace);
-
-        WorkspaceMembers member = WorkspaceMembers.builder()
-                .workspaceId(newWorkspace.getId())
-                .role(WorkspaceRole.OWNER)
-                .userId(userId)
-                .build();
-        workspaceMemberRepo.save(member);
-        return WorkspaceDTO.builder()
-                .id(newWorkspace.getId())
-                .name(newWorkspace.getName())
-                .ownerId(newWorkspace.getOwnerId())
-                .createdAt(newWorkspace.getCreatedAt())
-                .updatedAt(newWorkspace.getUpdatedAt())
-                .build();
-    }
-
-    //Method to get workspaces by ownerId
-    public List<WorkspaceDTO> getWorkspacesByOwnerId(Long ownerId) {
-        List<Workspace> workspaces = workSpaceRepo.findByOwnerId(ownerId);
-        return workspaces.stream().map(w -> WorkspaceDTO.builder()
-                .id(w.getId())
-                .name(w.getName())
-                .ownerId(w.getOwnerId())
-                .createdAt(w.getCreatedAt())
-                .updatedAt(w.getUpdatedAt())
-                .build()).toList();
-    }
-
-
-    //Method to get all the shared workspaces
-    public List<WorkspaceDTO> getSharedWorkspaces(Long userId) {
-
-        List<Long> workspaceIds = workspaceMemberRepo.findByUserId(userId)
-                .stream()
-                .map(WorkspaceMembers::getWorkspaceId)
-                .toList();
-
-        if (workspaceIds.isEmpty()) {
-            return List.of();
+                WorkspaceDTO workspaceDTO = workSpaceRepo.findById(workspaceId)
+                                .map(w -> WorkspaceDTO.builder().id(w.getId()).name(w.getName()).ownerId(w.getOwnerId())
+                                                .updatedAt(w.getUpdatedAt()).createdAt(w.getCreatedAt()).build())
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Workspace not found with id: " + workspaceId));
+                log.info("Workspace fetched successfully: workspaceId={}", workspaceId);
+                return workspaceDTO;
         }
 
-        return workSpaceRepo.findByIdInAndOwnerIdNot(workspaceIds, userId)
-                .stream()
-                .map(workspace -> WorkspaceDTO.builder()
-                        .id(workspace.getId())
-                        .name(workspace.getName())
-                        .ownerId(workspace.getOwnerId())
-                        .build())
-                .toList();
-    }
+        // Method to get workspace using board id
+        public WorkspaceDTO getWorkspaceByBoardId(Long boardId) {
+                log.info("Fetching workspace for boardId={}", boardId);
 
-    //Method to fetch members using workspaceId
-    public List<WorkspaceMembersDTO> getWorkspaceMembersByWorkspaceId(
-            Long workspaceId,
-            Long userId
-    ) {
-        List<WorkspaceMembers> members = workspaceMemberRepo
-                .findByWorkspaceId(workspaceId)
-                .stream()
-                .toList();
+                Board board = boardRepo.findById(boardId)
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Board not found: " + boardId));
 
-        if (members.isEmpty()) {
-            return List.of();
+                WorkspaceDTO workspace = workSpaceRepo.findById(board.getWorkspaceId())
+                                .map(w -> WorkspaceDTO.builder().name(w.getName()).id(w.getId()).ownerId(w.getOwnerId())
+                                                .build())
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                                "Board not found: " + boardId));
+                log.info("Workspace fetched successfully: workspaceId={}, boardId={}",
+                                workspace.getId(), boardId);
+                return workspace;
         }
 
-        List<Long> userIds = members.stream()
-                .map(WorkspaceMembers::getUserId)
-                .toList();
+        // Method to delete workspace
+        @Transactional
+        public void deleteWorkspace(Long id, Long userId) {
+                log.info("Deleting workspace: workspaceId={}, userId={}", id, userId);
 
-        List<UserDTO> users = authClient.getUsersByIds(userIds);
+                boolean hasAccess = workSpaceRepo.checkIsOwner(userId, id);
+                if (!hasAccess) {
+                        log.warn("Unauthorized workspace deletion attempt: workspaceId={}, userId={}",
+                                        id, userId);
 
-        Map<Long, UserDTO> userMap = users.stream()
-                .collect(Collectors.toMap(
-                        UserDTO::getId,
-                        user -> user
-                ));
-
-        return members.stream()
-                .map(member -> {
-                    UserDTO user = userMap.get(member.getUserId());
-
-                    return WorkspaceMembersDTO.builder()
-                            .joinedAt(member.getJoinedAt())
-
-                            .userId(member.getUserId())
-                            .name(user.getName())
-                            .email(user.getEmail())
-                            .avatar(user.getAvatar())
-                            .role(member.getRole())
-                            .build();
-                })
-                .toList();
-    }
-
-
-    //Method to add member to the workspace
-    public UserDTO addMember(AddMemberDTO addMemberDTO, Long userId) {
-        boolean hasAccess = workSpaceRepo.checkIsOwner(userId, addMemberDTO.getWorkspaceId());
-        if (!hasAccess) {
-            throw new AccessDeniedException("You are not the owner of this workspace");
+                        throw new AccessDeniedException("You are not the owner of this workspace");
+                }
+                boardRepo.deleteByWorkspaceId(id);
+                workspaceMemberRepo.deleteByWorkspaceId(id);
+                workSpaceRepo.deleteById(id);
+                log.info("Workspace deleted successfully: workspaceId={}, userId={}",
+                                id, userId);
         }
 
-        UserDTO user = authClient.getUserByEmail(addMemberDTO.getEmail());
+        // Method to create new workspace
+        @Transactional
+        public WorkspaceDTO createWorkspace(WorkspaceDTO workspaceDTO, Long userId) {
+                log.info("Creating workspace: userId={}", userId);
 
-        WorkspaceMembers member = WorkspaceMembers.builder()
-                .workspaceId(addMemberDTO.getWorkspaceId())
-                .role(WorkspaceRole.MEMBER)
-                .userId(user.getId())
-                .build();
+                Workspace workspace = Workspace.builder()
+                                .name(workspaceDTO.getName())
+                                .ownerId(workspaceDTO.getOwnerId())
+                                .build();
 
-        workspaceMemberRepo.save(member);
+                Workspace newWorkspace = workSpaceRepo.save(workspace);
 
-        return user;
-    }
-
-    // Remove a member from a workspace. Only the workspace owner can do this.
-    public void removeMember(Long workspaceId, Long memberUserId, Long userId) {
-        Workspace workspace = workSpaceRepo.findById(workspaceId)
-                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
-
-        if (!workspace.getOwnerId().equals(userId)) {
-            throw new AccessDeniedException("You are not the owner of this workspace");
+                WorkspaceMembers member = WorkspaceMembers.builder()
+                                .workspaceId(newWorkspace.getId())
+                                .role(WorkspaceRole.OWNER)
+                                .userId(userId)
+                                .build();
+                workspaceMemberRepo.save(member);
+                log.info("Workspace created successfully: workspaceId={}, userId={}",
+                                newWorkspace.getId(), userId);
+                return WorkspaceDTO.builder()
+                                .id(newWorkspace.getId())
+                                .name(newWorkspace.getName())
+                                .ownerId(newWorkspace.getOwnerId())
+                                .createdAt(newWorkspace.getCreatedAt())
+                                .updatedAt(newWorkspace.getUpdatedAt())
+                                .build();
         }
 
-        if (workspace.getOwnerId().equals(memberUserId)) {
-            throw new BusinessRuleException("The workspace owner cannot be removed");
+        // Method to get workspaces by ownerId
+        public List<WorkspaceDTO> getWorkspacesByOwnerId(Long ownerId) {
+                log.info("Fetching workspaces for ownerId={}", ownerId);
+
+                List<Workspace> workspaces = workSpaceRepo.findByOwnerId(ownerId);
+                if (workspaces.isEmpty()) {
+                        log.debug("No workspaces found for ownerId={}", ownerId);
+                        return List.of();
+                }
+                List<WorkspaceDTO> result = workspaces.stream().map(w -> WorkspaceDTO.builder()
+                                .id(w.getId())
+                                .name(w.getName())
+                                .ownerId(w.getOwnerId())
+                                .createdAt(w.getCreatedAt())
+                                .updatedAt(w.getUpdatedAt())
+                                .build()).toList();
+                log.info("Fetched {} workspaces for ownerId={}", result.size(), ownerId);
+                return result;
         }
 
-        WorkspaceMembers member = workspaceMemberRepo
-                .findByWorkspaceIdAndUserId(workspaceId, memberUserId)
-                .orElseThrow(() -> new EntityNotFoundException("Member not found in this workspace"));
+        // Method to get all the shared workspaces
+        public List<WorkspaceDTO> getSharedWorkspaces(Long userId) {
+                log.info("Fetching shared workspaces for userId={}", userId);
 
-        workspaceMemberRepo.delete(member);
-    }
+                List<Long> workspaceIds = workspaceMemberRepo.findByUserId(userId)
+                                .stream()
+                                .map(WorkspaceMembers::getWorkspaceId)
+                                .toList();
 
+                if (workspaceIds.isEmpty()) {
+                        log.debug("No workspace memberships found for userId={}", userId);
+                        return List.of();
+                }
 
-    //Method to update workspace
-    public void updateWorkspace(Long workspaceId, WorkspaceDTO workspaceDTO, Long userId) {
-        Workspace workspace = workSpaceRepo.findById(workspaceId)
-                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
-        if (!workspace.getOwnerId().equals(userId)) {
-            throw new AccessDeniedException("You are not the owner of this workspace");
+                List<WorkspaceDTO> result = workSpaceRepo.findByIdInAndOwnerIdNot(workspaceIds, userId)
+                                .stream()
+                                .map(workspace -> WorkspaceDTO.builder()
+                                                .id(workspace.getId())
+                                                .name(workspace.getName())
+                                                .ownerId(workspace.getOwnerId())
+                                                .build())
+                                .toList();
+                if (result.isEmpty()) {
+                        log.debug("No shared workspaces found for userId={}", userId);
+                        return List.of();
+                }
+
+                log.info("Fetched {} shared workspaces for userId={}",
+                                result.size(), userId);
+                return result;
+
         }
 
-        workspace.setName(workspaceDTO.getName());
+        // Method to fetch members using workspaceId
+        public List<WorkspaceMembersDTO> getWorkspaceMembersByWorkspaceId(
+                        Long workspaceId,
+                        Long userId) {
+                log.info("Fetching workspace members: workspaceId={}, userId={}",
+                                workspaceId, userId);
+                List<WorkspaceMembers> members = workspaceMemberRepo
+                                .findByWorkspaceId(workspaceId)
+                                .stream()
+                                .toList();
 
-        workSpaceRepo.save(workspace);
-    }
+                if (members.isEmpty()) {
+                        log.debug("No members found for workspaceId={}", workspaceId);
 
-    public List<Long> getWorkspaceMemberIds(Long workspaceId) {
-        return workspaceMemberRepo.findByWorkspaceId(workspaceId).stream().map(m -> m.getUserId()).toList();
-    }
+                        return List.of();
+                }
 
-    public List<WorkspaceDTO> getWorkspacesByWorkspaceId(List<Long> workspaceIds) {
-        return workSpaceRepo.findByIdIn(workspaceIds).stream().map(w -> WorkspaceDTO.builder().name(w.getName()).id(w.getId()).ownerId(w.getOwnerId()).build()).toList();
-    }
+                List<Long> userIds = members.stream()
+                                .map(WorkspaceMembers::getUserId)
+                                .toList();
+
+                List<UserDTO> users = authClient.getUsersByIds(userIds);
+
+                Map<Long, UserDTO> userMap = users.stream()
+                                .collect(Collectors.toMap(
+                                                UserDTO::getId,
+                                                user -> user));
+
+                List<WorkspaceMembersDTO> result = members.stream()
+                                .map(member -> {
+                                        UserDTO user = userMap.get(member.getUserId());
+
+                                        return WorkspaceMembersDTO.builder()
+                                                        .joinedAt(member.getJoinedAt())
+
+                                                        .userId(member.getUserId())
+                                                        .name(user.getName())
+                                                        .email(user.getEmail())
+                                                        .avatar(user.getAvatar())
+                                                        .role(member.getRole())
+                                                        .build();
+                                })
+                                .toList();
+                log.info("Fetched {} workspace members: workspaceId={}, userId={}",
+                                result.size(), workspaceId, userId);
+                return result;
+        }
+
+        // Method to add member to the workspace
+        public UserDTO addMember(AddMemberDTO addMemberDTO, Long userId) {
+                log.info("Adding member to workspace: workspaceId={}, userId={}",
+                                addMemberDTO.getWorkspaceId(), userId);
+                boolean hasAccess = workSpaceRepo.checkIsOwner(userId, addMemberDTO.getWorkspaceId());
+                if (!hasAccess) {
+                        log.warn("Unauthorized member addition attempt: workspaceId={}, userId={}",
+                                        addMemberDTO.getWorkspaceId(), userId);
+                        throw new AccessDeniedException("You are not the owner of this workspace");
+                }
+
+                UserDTO user = authClient.getUserByEmail(addMemberDTO.getEmail());
+
+                WorkspaceMembers member = WorkspaceMembers.builder()
+                                .workspaceId(addMemberDTO.getWorkspaceId())
+                                .role(WorkspaceRole.MEMBER)
+                                .userId(user.getId())
+                                .build();
+
+                workspaceMemberRepo.save(member);
+                log.info("Member added successfully: workspaceId={}, memberUserId={}, addedByUserId={}",
+                                addMemberDTO.getWorkspaceId(),
+                                user.getId(),
+                                userId);
+                return user;
+        }
+
+        // Remove a member from a workspace. Only the workspace owner can do this.
+        public void removeMember(Long workspaceId, Long memberUserId, Long userId) {
+                log.info("Removing workspace member: workspaceId={}, memberUserId={}, userId={}",
+                                workspaceId, memberUserId, userId);
+                Workspace workspace = workSpaceRepo.findById(workspaceId)
+                                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
+
+                if (!workspace.getOwnerId().equals(userId)) {
+                        log.warn("Unauthorized member removal attempt: workspaceId={}, memberUserId={}, userId={}",
+                                        workspaceId, memberUserId, userId);
+                        throw new AccessDeniedException("You are not the owner of this workspace");
+                }
+
+                if (workspace.getOwnerId().equals(memberUserId)) {
+                        log.warn("Workspace owner removal attempt: workspaceId={}, userId={}",
+                                        workspaceId, userId);
+
+                        throw new BusinessRuleException("The workspace owner cannot be removed");
+                }
+
+                WorkspaceMembers member = workspaceMemberRepo
+                                .findByWorkspaceIdAndUserId(workspaceId, memberUserId)
+                                .orElseThrow(() -> new EntityNotFoundException("Member not found in this workspace"));
+
+                workspaceMemberRepo.delete(member);
+                log.info("Workspace member removed successfully: workspaceId={}, memberUserId={}, userId={}",
+                                workspaceId, memberUserId, userId);
+        }
+
+        // Method to update workspace
+        public void updateWorkspace(Long workspaceId, WorkspaceDTO workspaceDTO, Long userId) {
+                log.info("Updating workspace: workspaceId={}, userId={}",
+                                workspaceId, userId);
+
+                Workspace workspace = workSpaceRepo.findById(workspaceId)
+                                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
+                if (!workspace.getOwnerId().equals(userId)) {
+                        log.warn("Unauthorized workspace update attempt: workspaceId={}, userId={}",
+                                        workspaceId, userId);
+
+                        throw new AccessDeniedException("You are not the owner of this workspace");
+                }
+
+                workspace.setName(workspaceDTO.getName());
+
+                workSpaceRepo.save(workspace);
+                log.info("Workspace updated successfully: workspaceId={}, userId={}",
+                                workspaceId, userId);
+        }
+
+        public List<Long> getWorkspaceMemberIds(Long workspaceId) {
+                log.info("Fetching member IDs for workspaceId={}", workspaceId);
+
+                return workspaceMemberRepo.findByWorkspaceId(workspaceId).stream().map(m -> m.getUserId()).toList();
+        }
+
+        public List<WorkspaceDTO> getWorkspacesByWorkspaceId(List<Long> workspaceIds) {
+                log.info("Fetching workspaces for {} workspace IDs", workspaceIds.size());
+
+                return workSpaceRepo.findByIdIn(workspaceIds).stream().map(w -> WorkspaceDTO.builder().name(w.getName())
+                                .id(w.getId()).ownerId(w.getOwnerId()).build()).toList();
+        }
 }
