@@ -222,10 +222,12 @@ const Column: React.FC<ColumnProps> = ({
 
 // ─── Board (main) ─────────────────────────────────────────────────────────────
 type Member = {
-  // id: number;
+  id: number;
+  userId: number;
   name: string;
   email: string;
-  userId: number;
+  avatar?: string | null;
+  role?: "OWNER" | "MEMBER";
 };
 const Board: React.FC = () => {
   const { boardId } = useParams<{ boardId: string }>();
@@ -238,8 +240,13 @@ const Board: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [addingList, setAddingList] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [top5MembersLoading, setTop5MembersLoading] = useState<boolean>(true);
+  const [top5MembersAndTotalMembersCount, setTop5MembersAndTotalMembersCount] =
+    useState<{ members: Member[]; totalMembers: number }>();
+  const [workspaceId, setWorkspaceId] = useState<number | null>(null);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
-
+  const [membersLoading, setMembersLoading] = useState(false);
   // Drag state stored in a ref to avoid re-renders
   const dragCard = useRef<Card | null>(null);
   const dragListId = useRef<number | null>(null);
@@ -256,11 +263,9 @@ const Board: React.FC = () => {
           ),
           axiosIns.get<BoardList[]>(`${BASE}/list/${boardId}`),
         ]);
+        setWorkspaceId(boardRes.data.workspaceId);
         setBoardBackground(boardRes.data.backgroundImage);
-        const membersRes = await axiosIns.get<Member[]>(
-          `/api/workspace/member/${boardRes.data.workspaceId}`,
-        );
-        setMembers(membersRes.data);
+
         const res = listsRes;
         setLists(res.data);
         //Fetch all lists in parallel
@@ -284,6 +289,45 @@ const Board: React.FC = () => {
     };
     fetchAllCardsAndLists();
   }, [numericBoardId, boardId]);
+
+  //Fetch all members
+  useEffect(() => {
+    if (!isMembersModalOpen || !workspaceId) return;
+
+    const fetchMembers = async () => {
+      setMembersLoading(true);
+
+      try {
+        const res = await axiosIns.get(`/api/workspace/member/${workspaceId}`);
+
+        setMembers(res.data);
+      } catch (err) {
+        console.error("Unable to fetch workspace members:", err);
+      } finally {
+        setMembersLoading(false);
+      }
+    };
+
+    fetchMembers();
+  }, [isMembersModalOpen, workspaceId]);
+  //Fetch 5 members and total members count
+  useEffect(() => {
+    if (!workspaceId) return;
+    const fetchTop5MembersAndTotalMembersCount = async () => {
+      setLoading(true);
+      try {
+        const res = await axiosIns.get(
+          `/api/workspace/member/${workspaceId}/summary`,
+        );
+        setTop5MembersAndTotalMembersCount(res.data);
+      } catch (err) {
+        console.error("Unable to fetch workspace members:", err);
+      } finally {
+        setTop5MembersLoading(false);
+      }
+    };
+    fetchTop5MembersAndTotalMembersCount();
+  }, [workspaceId]);
 
   // ── List actions ────────────────────────────────────────────────────────────
   const handleAddList = useCallback(
@@ -658,87 +702,235 @@ const Board: React.FC = () => {
   }
 
   return (
-    <div
-      className="flex min-h-screen flex-col bg-cover bg-center bg-no-repeat"
-      style={{
-        backgroundImage: boardBackground
-          ? `url(${boardBackground})`
-          : "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6d28d9 100%)",
-      }}
-    >
-      {/* Board Header */}
-      <div className="flex items-center justify-between border-b border-white/10 bg-black/25 px-4 py-3 backdrop-blur-md sm:px-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold tracking-tight text-white drop-shadow-sm">
-            Board #{boardId}
-          </h1>
-          <span className="text-white/30">|</span>
-          <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/85 ring-1 ring-inset ring-white/15">
-            {lists.length} list{lists.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-      </div>
+    <div className="relative h-screen overflow-hidden">
+      {/* Background */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: boardBackground
+            ? `url(${boardBackground})`
+            : "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6d28d9 100%)",
+        }}
+      />
+      {/* Board content */}
+      <div className="relative z-10 flex h-full flex-col">
+        {/* Board Header */}
+        <div className="flex  flex-col gap-3 border-b border-white/10 bg-black/25 px-3 py-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <h1 className="truncate text-base font-semibold tracking-tight text-white drop-shadow-sm sm:text-lg">
+              Board #{boardId}
+            </h1>
 
-      {/* Columns */}
-      <div className="flex flex-1 items-start gap-4 overflow-x-auto px-4 pb-6 pt-5 sm:px-6">
-        {lists.map((list, listIndex) => (
-          <Column
-            key={list.id}
-            list={list}
-            listIndex={listIndex}
-            cards={cards[list.id] ?? []}
-            onAddCard={handleAddCard}
-            onDeleteCard={handleDeleteCard}
-            onClickCard={setSelectedCard}
-            onDeleteList={handleDeleteList}
-            onRenameList={handleRenameList}
-            onDragStartList={handleDragStartList}
-            onDragEndList={handleDragEndList}
-            isListDragging={isListDragging}
-            onDropList={handleDropList}
-            onDragStartCard={handleDragStart}
-            onDropCard={handleDrop}
-          />
-        ))}
+            <span className="shrink-0 text-white/30">|</span>
 
-        {addingList ? (
-          <AddListForm
-            onClose={() => setAddingList(false)}
-            onAdd={handleAddList}
-          />
-        ) : (
+            <span className="shrink-0 rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white/85 ring-1 ring-inset ring-white/15 sm:px-2.5 sm:py-0.5 sm:text-xs">
+              {lists.length} list{lists.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+
           <button
-            onClick={() => setAddingList(true)}
-            className="flex w-64 shrink-0 items-center gap-2 rounded-2xl bg-white/15 px-4 py-3 text-[13px] font-medium text-white shadow-sm shadow-black/10 ring-1 ring-inset ring-white/20 backdrop-blur-md transition-colors hover:bg-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            type="button"
+            onClick={() => setIsMembersModalOpen(true)}
+            className="group flex w-fit items-center gap-2 self-end rounded-full border border-white/15 bg-white/10 py-1 pl-1.5 pr-3 shadow-sm backdrop-blur-md transition-all duration-200 hover:border-white/25 hover:bg-white/15 sm:self-auto"
+            title={`${top5MembersAndTotalMembersCount?.totalMembers ?? 0} members`}
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add another list
+            <div className="flex -space-x-2">
+              {top5MembersAndTotalMembersCount?.members
+                .slice(0, 5)
+                .map((member, index) =>
+                  member.avatar ? (
+                    <img
+                      key={member.id}
+                      src={member.avatar}
+                      alt={member.name}
+                      title={member.name}
+                      className="relative h-6 w-6 rounded-full border-2 border-[#5146a5] object-cover transition-transform duration-200 hover:z-10 hover:scale-110 sm:h-8 sm:w-8"
+                      style={{ zIndex: 5 - index }}
+                    />
+                  ) : (
+                    <span
+                      key={member.id}
+                      title={member.name}
+                      className="relative flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#5146a5] bg-gradient-to-br from-indigo-100 to-violet-200 text-[9px] font-bold text-indigo-700 transition-transform duration-200 hover:z-10 hover:scale-110 sm:h-8 sm:w-8 sm:text-xs"
+                      style={{ zIndex: 5 - index }}
+                    >
+                      {member.name?.charAt(0).toUpperCase() || "?"}
+                    </span>
+                  ),
+                )}
+            </div>
+
+            <span className="whitespace-nowrap text-[11px] font-medium text-white/90 sm:text-xs">
+              {top5MembersAndTotalMembersCount?.totalMembers ?? 0}
+              <span className="ml-1 text-white/60">
+                {top5MembersAndTotalMembersCount?.totalMembers === 1
+                  ? "Member"
+                  : "Members"}
+              </span>
+            </span>
           </button>
+        </div>
+
+        {/* Columns */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-6 pt-4 sm:px-6 sm:pt-5">
+          <div className="flex flex-wrap items-start gap-3 sm:gap-4">
+            {lists.map((list, listIndex) => (
+              <>
+                <Column
+                  key={list.id}
+                  list={list}
+                  listIndex={listIndex}
+                  cards={cards[list.id] ?? []}
+                  onAddCard={handleAddCard}
+                  onDeleteCard={handleDeleteCard}
+                  onClickCard={setSelectedCard}
+                  onDeleteList={handleDeleteList}
+                  onRenameList={handleRenameList}
+                  onDragStartList={handleDragStartList}
+                  onDragEndList={handleDragEndList}
+                  isListDragging={isListDragging}
+                  onDropList={handleDropList}
+                  onDragStartCard={handleDragStart}
+                  onDropCard={handleDrop}
+                />
+              </>
+            ))}
+
+            {addingList ? (
+              <AddListForm
+                onClose={() => setAddingList(false)}
+                onAdd={handleAddList}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setAddingList(true)}
+                className="flex w-64 shrink-0 items-center gap-2 rounded-2xl bg-white/15 px-4 py-3 text-[13px] font-medium text-white shadow-sm shadow-black/10 ring-1 ring-inset ring-white/20 backdrop-blur-md transition-colors hover:bg-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Add another list
+              </button>
+            )}
+          </div>
+        </div>
+        {/* Members modal */}
+        {isMembersModalOpen && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setIsMembersModalOpen(false);
+              }
+            }}
+          >
+            <div className="flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                <div>
+                  <h2 className="text-base font-semibold text-slate-800">
+                    Workspace Members
+                  </h2>
+
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    {top5MembersAndTotalMembersCount?.totalMembers ?? 0} members
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsMembersModalOpen(false)}
+                  className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Members */}
+              <div className="overflow-y-auto px-3 py-3">
+                {membersLoading ? (
+                  <div className="space-y-2">
+                    {[...Array(5)].map((_, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                      >
+                        <div className="h-9 w-9 animate-pulse rounded-full bg-slate-200" />
+
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3 w-28 animate-pulse rounded bg-slate-200" />
+                          <div className="h-2.5 w-40 animate-pulse rounded bg-slate-100" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : members.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <p className="text-sm text-slate-500">No members found.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {members.map((member) => (
+                      <div
+                        key={member.userId}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-slate-50"
+                      >
+                        {/* Avatar */}
+                        {member.avatar ? (
+                          <img
+                            src={member.avatar}
+                            alt={member.name}
+                            className="h-9 w-9 shrink-0 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700">
+                            {member.name?.charAt(0).toUpperCase() || "?"}
+                          </div>
+                        )}
+
+                        {/* User details */}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-slate-700">
+                            {member.name}
+                          </p>
+
+                          <p className="truncate text-xs text-slate-400">
+                            {member.email}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
-
-      {/* Card Detail Modal */}
-      {selectedCard && (
-        <CardModal
-          card={selectedCard}
-          members={members}
-          onClose={() => setSelectedCard(null)}
-          onSave={handleSaveCard}
-          onDelete={(cardId) => handleDeleteCard(cardId, selectedCard.listId)}
-        />
-      )}
     </div>
   );
 };

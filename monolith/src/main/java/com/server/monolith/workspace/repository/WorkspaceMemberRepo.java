@@ -2,9 +2,11 @@ package com.server.monolith.workspace.repository;
 
 
 import com.server.monolith.workspace.model.WorkspaceMembers;
+import com.server.monolith.workspace.model.WorkspaceRole;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,4 +33,20 @@ public interface WorkspaceMemberRepo extends JpaRepository<WorkspaceMembers, Lon
 
     // Delete all members of a workspace
     void deleteByWorkspaceId(Long workspaceId);
+
+
+    //find workspace members by userId and role
+    List<WorkspaceMembers> findByUserIdAndRole(Long userId, WorkspaceRole workspaceRole);
+
+    //find top 5 workspace members by workspaceId and role and order by joined at
+    List<WorkspaceMembers> findTop5ByWorkspaceIdAndUserIdNotOrderByJoinedAtAsc(
+            Long workspaceId,
+            Long userId
+    );
+
+    //count total members by workspaceId and role
+    Long countByWorkspaceId(
+            Long workspaceId
+
+    );
 }

@@ -102,6 +102,7 @@ const CreateBoardCard: React.FC<CreateBoardCardProps> = ({ onClick }) => {
 const Boards: React.FC = () => {
   const [boards, setBoards] = React.useState<Board[]>([]);
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const [loading, setLoading] = useState<boolean>(false);
   const [boardDTO, setBoardDTO] = useState<Board>({
     backgroundImage: "",
     name: "",
@@ -114,13 +115,18 @@ const Boards: React.FC = () => {
   const [selectedBackground, setSelectedBackground] = useState(backgrounds[0]);
   React.useEffect(() => {
     //Method to fetch initial boards based on the selected workspace
-    axiosIns
-      .get(`/api/workspace/board/${workspaceId}`)
-      .then((res) => {
+    const fetchBoards = async () => {
+      setLoading(true);
+      try {
+        const res = await axiosIns.get(`/api/workspace/board/${workspaceId}`);
         setBoards(res.data);
-        setLoadError(false);
-      })
-      .catch(() => setLoadError(true));
+      } catch (err) {
+        setLoadError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBoards();
   }, [workspaceId]);
 
   // Function to create a new board
@@ -217,16 +223,30 @@ const Boards: React.FC = () => {
 
       {/* Board grid */}
       <div className="flex flex-wrap gap-4">
-        {boards.map((board) => (
-          <Link key={board.id ?? board.name} to={`/board/${board.id}`}>
-            <BoardCard
-              backgroundImage={board.backgroundImage}
-              description={board.description}
-              name={board.name}
-            />
-          </Link>
-        ))}
-        <CreateBoardCard onClick={() => setIsCreateModalOpen(true)} />
+        {loading ? (
+          <>
+            {[...Array(3)].map((_, index) => (
+              <div
+                key={index}
+                className="h-40 w-64 animate-pulse rounded-xl bg-gray-200"
+              />
+            ))}
+          </>
+        ) : (
+          <>
+            {boards.map((board) => (
+              <Link key={board.id ?? board.name} to={`/board/${board.id}`}>
+                <BoardCard
+                  backgroundImage={board.backgroundImage}
+                  description={board.description}
+                  name={board.name}
+                />
+              </Link>
+            ))}
+
+            <CreateBoardCard onClick={() => setIsCreateModalOpen(true)} />
+          </>
+        )}
       </div>
       {/* Create board modal */}
       {isCreateModalOpen && (

@@ -29,8 +29,27 @@ public class WorkspaceController {
         return ResponseEntity.ok(workspaceService.getWorkspaceByWorkspaceId(workspaceId));
     }
 
+    //Endpoint to search workspaces using name
+    @GetMapping("/search")
+    public ResponseEntity<List<WorkspaceDTO>> searchWorkspace(@RequestParam String workspaceName, @RequestParam boolean shared, @AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        return ResponseEntity.ok(workspaceService.findWorkspaceByNameStartingWith(workspaceName, shared, userId));
+    }
+
+
+    //Endpoint to fetch top 5 workspace members and total members count
+    @GetMapping("/member/{workspaceId}/summary")
+    public ResponseEntity<WorkspaceMembersSummaryDTO> getWorkspaceMembersSummary(
+            @PathVariable Long workspaceId, @AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("userId");
+        return ResponseEntity.ok(
+                workspaceService.getTop5WorkspaceMembersAndTotalMembersCount(workspaceId, userId)
+        );
+    }
+
     //Endpoint to fetch workspaces using workspaceIds
     @PostMapping("/workspaces")
+
     public ResponseEntity<List<WorkspaceDTO>> getWorkspacesByWorkspaceId(@RequestBody List<Long> workspaceIds) {
 
 

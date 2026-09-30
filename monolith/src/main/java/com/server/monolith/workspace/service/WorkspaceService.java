@@ -15,6 +15,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -306,5 +307,60 @@ public class WorkspaceService {
 
         log.info("Fetching workspaces for {} workspace IDs", workspaceIds.size());
         return workSpaceRepo.findByIdIn(workspaceIds).stream().map(w -> WorkspaceDTO.builder().name(w.getName()).id(w.getId()).ownerId(w.getOwnerId()).build()).toList();
+    }
+
+
+    //Method to find both users workspaces as shared workspaces using workspace name and userId
+    public List<WorkspaceDTO> findWorkspaceByNameStartingWith(String workspaceName, Boolean shared, Long userId) {
+        log.info(
+                "Searching workspaces: userId={}, workspaceName={}, shared={}",
+                userId,
+                workspaceName,
+                shared
+        );
+        List<Workspace> workspaces;
+        if (!shared) {
+            workspaces = workSpaceRepo.findByNameStartingWithIgnoreCaseAndOwnerId(workspaceName, userId);
+        } else {
+            List<Long> workspaceIds =
+                    workspaceMemberRepo.findByUserIdAndRole(userId, WorkspaceRole.MEMBER).stream().map(WorkspaceMembers::getWorkspaceId).toList();
+
+
+            workspaces =
+                    workSpaceRepo.findByIdInAndNameStartingWithIgnoreCase(
+                            workspaceIds, workspaceName
+                    );
+
+
+        }
+        return workspaces.stream().map(w -> WorkspaceDTO.builder().name(w.getName()).ownerId(w.getOwnerId()).updatedAt(w.getUpdatedAt()).createdAt(w.getCreatedAt()).build()).toList();
+    }
+
+
+    //method to fetch top 5 workspace members and total members count
+    public WorkspaceMembersSummaryDTO getTop5WorkspaceMembersAndTotalMembersCount(Long workspaceId, Long userId) {
+
+        // Fetch maximum 5 members
+        List<WorkspaceMembers> members = workspaceMemberRepo.findTop5ByWorkspaceIdAndUserIdNotOrderByJoinedAtAsc(
+                workspaceId,
+                userId
+        );
+
+        // Fetch total member count
+        long totalMembers =
+                workspaceMemberRepo.countByWorkspaceId(
+                        workspaceId
+
+                );
+
+        // Convert entities to DTOs
+        List<Long> memberIds = members.stream()
+                .map(WorkspaceMembers::getUserId)
+                .toList();
+        List<WorkspaceMembersDTO> memberDTOs = userService.getUsersByIds(memberIds).stream().map(m -> WorkspaceMembersDTO.builder().id(m.getId()).name(m.getName()).avatar(m.getAvatar()).email(m.getEmail()).build()).toList();
+        return WorkspaceMembersSummaryDTO.builder()
+                .members(memberDTOs)
+                .totalMembers(totalMembers)
+                .build();
     }
 }
