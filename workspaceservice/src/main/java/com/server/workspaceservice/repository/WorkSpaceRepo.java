@@ -35,4 +35,9 @@ public interface WorkSpaceRepo extends JpaRepository<Workspace, Long> {
             List<Long> ids,
             Long ownerId
     );
+
+    List<Workspace> findByNameStartingWithIgnoreCaseAndOwnerId(String workspaceName, Long ownerId);
+
+    List<Workspace> findByIdInAndNameStartingWithIgnoreCase(List<Long> workspaceIds, String workspaceName);
+
 }
