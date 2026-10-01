@@ -24,33 +24,35 @@ const ContentPanel: React.FC<{
   isMobileOpen: boolean;
   setIsMobileOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }> = ({ setIsMobileOpen, isMobileOpen }) => {
-  const [members, setMembers] = useState<Member[]>([]);
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const { pathname } = useLocation();
   // Start as true only when there is a workspaceId to fetch; false otherwise
   const [loading, setLoading] = useState<boolean>(!!workspaceId);
-  const [membersLoading, setMembersLoading] = useState<boolean>(true);
+  const [top5MembersLoading, setTop5MembersLoading] = useState<boolean>(true);
+  const [top5MembersAndTotalMembersCount, setTop5MembersAndTotalMembersCount] =
+    useState<{ members: Member[]; totalMembers: number }>();
   const workspaceInitial = workspace?.name?.charAt(0).toUpperCase() || "W";
 
-  // Fetch members of the selected workspace.
+  //Fetch 5 members and total members count
   useEffect(() => {
     if (!workspaceId) return;
-    const fetchMembers = async () => {
+    const fetchTop5MembersAndTotalMembersCount = async () => {
       setLoading(true);
       try {
-        const res = await axiosIns.get(`/api/workspace/member/${workspaceId}`);
-        setMembers(res.data);
-        console.log("members", res.data);
+        const res = await axiosIns.get(
+          `/api/workspace/member/${workspaceId}/summary`,
+        );
+        setTop5MembersAndTotalMembersCount(res.data);
       } catch (err) {
         console.error("Unable to fetch workspace members:", err);
       } finally {
-        setMembersLoading(false);
+        setTop5MembersLoading(false);
       }
     };
-
-    fetchMembers();
+    fetchTop5MembersAndTotalMembersCount();
   }, [workspaceId]);
+
   // Fetch workspace details
   const fetchWorkspace = () => {
     if (pathname == "/dashboard") {
@@ -112,31 +114,54 @@ const ContentPanel: React.FC<{
                 {workspace?.name || "Workspace"}
               </h1>
               <div className="flex items-center gap-2 sm:gap-2.5">
-                {/* Stacked member avatars (max 5) */}
-                <div className="flex -space-x-2">
-                  {members.slice(0, 5).map((member) =>
-                    member.avatar ? (
-                      <img
-                        key={member.id}
-                        src={member.avatar}
-                        alt={member.name}
-                        title={member.name}
-                        className="h-5 w-5 rounded-full object-cover ring-2 ring-white sm:h-6 sm:w-6"
-                      />
-                    ) : (
-                      <span
-                        key={member.id}
-                        title={member.name}
-                        className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[9px] font-semibold text-indigo-700 ring-2 ring-white sm:h-6 sm:w-6 sm:text-[10px]"
-                      >
-                        {member.name?.charAt(0).toUpperCase()}
-                      </span>
-                    ),
-                  )}
-                </div>
-                <span className="whitespace-nowrap text-xs font-medium text-slate-500">
-                  {members.length} {members.length === 1 ? "member" : "members"}
-                </span>
+                {top5MembersLoading ? (
+                  <>
+                    {/* Avatar skeletons */}
+                    <div className="flex -space-x-2">
+                      {[...Array(3)].map((_, index) => (
+                        <div
+                          key={index}
+                          className="h-5 w-5 animate-pulse rounded-full bg-slate-200 ring-2 ring-white sm:h-6 sm:w-6"
+                        />
+                      ))}
+                    </div>
+
+                    {/* Member count skeleton */}
+                    <div className="h-3 w-16 animate-pulse rounded-full bg-slate-200" />
+                  </>
+                ) : (
+                  <>
+                    {/* Stacked member avatars (max 5) */}
+                    <div className="flex -space-x-2">
+                      {top5MembersAndTotalMembersCount?.members.map((member) =>
+                        member.avatar ? (
+                          <img
+                            key={member.id}
+                            src={member.avatar}
+                            alt={member.name}
+                            title={member.name}
+                            className="h-5 w-5 rounded-full object-cover ring-2 ring-white sm:h-6 sm:w-6"
+                          />
+                        ) : (
+                          <span
+                            key={member.id}
+                            title={member.name}
+                            className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-[9px] font-semibold text-indigo-700 ring-2 ring-white sm:h-6 sm:w-6 sm:text-[10px]"
+                          >
+                            {member.name?.charAt(0).toUpperCase()}
+                          </span>
+                        ),
+                      )}
+                    </div>
+
+                    <span className="whitespace-nowrap text-xs font-medium text-slate-500">
+                      {top5MembersAndTotalMembersCount?.totalMembers}
+                      {top5MembersAndTotalMembersCount?.totalMembers === 1
+                        ? " Member"
+                        : " Members"}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </>
@@ -221,9 +246,6 @@ const ContentPanel: React.FC<{
               workspace,
               setWorkspace,
               refreshWorkspace: fetchWorkspace,
-              members: members,
-              setMembers: setMembers,
-              membersLoading: membersLoading,
             }}
           />
         )}

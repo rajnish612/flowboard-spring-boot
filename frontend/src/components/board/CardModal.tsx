@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Card } from "../../types/task";
 import { axiosIns } from "../../utils/axiosInstance";
 import { useParams } from "react-router";
@@ -6,27 +6,31 @@ import { useAuth } from "../../hooks/UseAuth";
 const BASE = "/api/task";
 type CardModalProps = {
   card: Card;
-  members: Member[];
   onClose: () => void;
   onSave: (updated: Card) => void;
   onDelete: (cardId: number) => void;
+  workspaceId: number | null;
 };
 
 type Member = {
   name: string;
   email: string;
   userId: number;
+  avatar: string;
 };
 // Modal for viewing and editing a card's details
 export const CardModal: React.FC<CardModalProps> = ({
   card,
-  members,
+  workspaceId,
   onClose,
   onSave,
   onDelete,
 }) => {
   const { user } = useAuth();
   const { boardId } = useParams<{ boardId: string }>();
+  const [members, setMembers] = useState<Member[]>([]);
+  const [membersLoading, setMembersLoading] = useState<boolean>(false);
+  const [isMemberDropdownOpen, setIsMemberDropdownOpen] = useState(false);
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description ?? "");
   const [dueDate, setDueDate] = useState(
@@ -37,6 +41,24 @@ export const CardModal: React.FC<CardModalProps> = ({
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  //Fetch members
+  useEffect(() => {
+    if (!workspaceId) return;
+    const fetchMembers = async () => {
+      setMembersLoading(true);
+      try {
+        const res = await axiosIns.get(`/api/workspace/member/${workspaceId}`);
+        setMembers(res.data);
+      } catch (err) {
+        console.error("Unable to fetch workspace members:", err);
+      } finally {
+        setMembersLoading(false);
+      }
+    };
+
+    fetchMembers();
+  }, [workspaceId]);
 
   //Save card details
   const handleSave = async () => {
@@ -129,25 +151,129 @@ export const CardModal: React.FC<CardModalProps> = ({
                 className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
               />
             </div>
-            <div>
+
+            {/* assign to members options */}
+            <div className="relative">
               <label className="mb-1.5 block text-[13px] font-medium text-slate-700">
                 Assign to
               </label>
-              <select
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+
+              <button
+                type="button"
+                onClick={() => setIsMemberDropdownOpen((prev) => !prev)}
+                className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
               >
-                <option value="">Unassigned</option>
-                {members.map(
-                  (member) =>
-                    user?.id !== member.userId && (
-                      <option key={member.userId} value={member.userId}>
-                        {member.name} ({member.email})
-                      </option>
-                    ),
-                )}
-              </select>
+                <div className="flex min-w-0 items-center gap-2">
+                  {(() => {
+                    const selected = members.find(
+                      (m) => String(m.userId) === assignedTo,
+                    );
+
+                    return selected ? (
+                      <>
+                        {selected.avatar ? (
+                          <img
+                            src={selected.avatar}
+                            alt=""
+                            className="h-6 w-6 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-semibold text-indigo-700">
+                            {selected.name?.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+
+                        <span className="truncate font-medium">
+                          {selected.name}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-slate-500">Unassigned</span>
+                    );
+                  })()}
+                </div>
+
+                <svg
+                  className={`h-4 w-4 text-slate-400 transition-transform ${
+                    isMemberDropdownOpen ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="m19 9-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              {isMemberDropdownOpen && (
+                <div className="absolute bottom-full left-0 right-0 z-50 mb-1.5 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssignedTo("");
+                      setIsMemberDropdownOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-slate-600 hover:bg-slate-50"
+                  >
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100">
+                      —
+                    </span>
+                    Unassigned
+                  </button>
+
+                  {members
+                    .filter((member) => user?.id !== member.userId)
+                    .map((member) => {
+                      const selected = assignedTo === String(member.userId);
+
+                      return (
+                        <button
+                          key={member.userId}
+                          type="button"
+                          onClick={() => {
+                            setAssignedTo(String(member.userId));
+                            setIsMemberDropdownOpen(false);
+                          }}
+                          className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left ${
+                            selected ? "bg-indigo-50" : "hover:bg-slate-50"
+                          }`}
+                        >
+                          {member.avatar ? (
+                            <img
+                              src={member.avatar}
+                              alt=""
+                              className="h-7 w-7 shrink-0 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-semibold text-indigo-700">
+                              {member.name?.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-medium text-slate-700">
+                              {member.name}
+                            </p>
+                            <p className="truncate text-[10px] text-slate-400">
+                              {member.email}
+                            </p>
+                          </div>
+
+                          {selected && (
+                            <span className="text-xs font-semibold text-indigo-600">
+                              ✓
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           </div>
         </div>
