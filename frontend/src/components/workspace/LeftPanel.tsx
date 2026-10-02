@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+﻿import React, { useCallback, useRef, useState } from "react";
 import { useAuth } from "../../hooks/UseAuth";
 import { axiosIns } from "../../utils/axiosInstance";
 import { Link } from "react-router";
@@ -100,6 +100,9 @@ const LeftPanel: React.FC<{
 }> = ({ isMobileOpen, setIsMobileOpen }) => {
   const [fetchingWorkspaces, setFetchingWorkspaces] = useState<boolean>(true);
   const [workspaces, setWorkspaces] = useState<WorkSpace[]>(initialWorkspaces);
+  const [page, setPage] = useState(0);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   const [activeView, setActiveView] = useState<WorkspaceView>("mine");
   const [creatingWorkspace, setCreatingWorkspace] = useState<boolean>(false);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
@@ -130,55 +133,91 @@ const LeftPanel: React.FC<{
     setOpenDropdownId((prev) => (prev === id ? null : id));
   };
 
-  React.useEffect(() => {
-    const fetchWorkspaces = async () => {
-      const fetchWorkspacesApi =
-        activeView === "shared" ? "/api/workspace/shared" : "/api/workspace";
-      setFetchingWorkspaces(true);
-      try {
-        const res = await axiosIns.get(fetchWorkspacesApi);
-        setWorkspaces(res.data);
-      } catch {
-        // The interceptor displays the request error to the user.
-      } finally {
-        setFetchingWorkspaces(false);
-      }
-    };
-    fetchWorkspaces();
-  }, [activeView]);
-  React.useEffect(() => {
-    const fetchWorkspaces = async () => {
+  //Function to fetch workspaces
+  const fetchWorkspaces = useCallback(
+    async (pageNumber: number) => {
       setFetchingWorkspaces(true);
 
       try {
         if (searchWorkspaceName.trim()) {
           const res = await axiosIns.get("/api/workspace/search", {
             params: {
+              page: pageNumber,
+              size: 10,
               workspaceName: searchWorkspaceName.trim(),
               shared: activeView === "shared",
             },
           });
+          const data = res.data;
+          if (pageNumber === 0) {
+            setWorkspaces(data.content);
+          } else {
+            setWorkspaces((prev) => [...prev, ...data.content]);
+          }
 
-          setWorkspaces(res.data);
+          setHasMore(pageNumber + 1 < data.totalPages);
+          setPage(pageNumber);
         } else {
           const endpoint =
             activeView === "shared"
               ? "/api/workspace/shared"
               : "/api/workspace";
 
-          const res = await axiosIns.get(endpoint);
+          const res = await axiosIns.get(endpoint, {
+            params: {
+              page: pageNumber,
+              size: 10,
+            },
+          });
 
-          setWorkspaces(res.data);
+          const data = res.data;
+
+          if (pageNumber === 0) {
+            setWorkspaces(data.content);
+          } else {
+            setWorkspaces((prev) => [...prev, ...data.content]);
+          }
+
+          setHasMore(pageNumber + 1 < data.totalPages);
+          setPage(pageNumber);
         }
       } catch {
         // interceptor handles error
       } finally {
         setFetchingWorkspaces(false);
       }
-    };
+    },
+    [activeView, searchWorkspaceName],
+  );
 
-    fetchWorkspaces();
-  }, [activeView, searchWorkspaceName]);
+  //Fetch inital workspaces
+  React.useEffect(() => {
+    setPage(0);
+    setHasMore(true);
+    setWorkspaces([]);
+    fetchWorkspaces(0);
+  }, [fetchWorkspaces]);
+
+  //Pagination trigger if user scrolls to bottom
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !fetchingWorkspaces) {
+          fetchWorkspaces(page + 1);
+        }
+      },
+      {
+        threshold: 0.1,
+      },
+    );
+
+    if (bottomRef.current) {
+      observer.observe(bottomRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [page, hasMore, fetchingWorkspaces, fetchWorkspaces]);
+
   return (
     <>
       {isMobileOpen && (
@@ -191,7 +230,7 @@ const LeftPanel: React.FC<{
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex h-screen w-64 min-w-[16rem] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white py-4 shadow-2xl transition-transform duration-300 md:relative md:z-auto md:flex md:translate-x-0 md:shadow-none ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 flex h-full w-64 min-w-[16rem] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white py-4 shadow-2xl transition-transform duration-300 md:relative md:z-auto md:flex md:translate-x-0 md:shadow-none ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 mb-4 border-b border-slate-100 pb-4">
@@ -336,26 +375,9 @@ const LeftPanel: React.FC<{
           </div>
 
           {/* Workspace list */}
-          {fetchingWorkspaces ? (
-            <div
-              className="space-y-1 px-1 py-1"
-              aria-label="Loading workspaces"
-            >
-              {[0, 1, 2].map((item) => (
-                <div
-                  key={item}
-                  className="flex animate-pulse items-center gap-2.5 rounded-lg px-2 py-2"
-                >
-                  <div className="h-8 w-8 shrink-0 rounded-lg bg-slate-100" />
-                  <div className="min-w-0 flex-1 space-y-1.5">
-                    <div className="h-3 w-28 rounded-full bg-slate-100" />
-                    <div className="h-2.5 w-20 rounded-full bg-slate-100/80" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            workspaces.map((ws) => (
+
+          <>
+            {workspaces.map((ws) => (
               <div key={ws.id} className="rounded-lg overflow-hidden">
                 <button
                   onClick={() => toggleDropdown(ws.id)}
@@ -419,8 +441,33 @@ const LeftPanel: React.FC<{
                   </div>
                 )}
               </div>
-            ))
-          )}
+            ))}
+            {/* Pagination trigger */}
+            {hasMore && (
+              <div ref={bottomRef} className="h-4" aria-hidden="true" />
+            )}
+
+            {/* Loading next page */}
+            {fetchingWorkspaces && (
+              <div
+                className="space-y-1 px-1 py-1"
+                aria-label="Loading workspaces"
+              >
+                {[0, 1].map((item) => (
+                  <div
+                    key={item}
+                    className="flex animate-pulse items-center gap-2.5 rounded-lg px-2 py-2"
+                  >
+                    <div className="h-8 w-8 shrink-0 rounded-lg bg-slate-100" />
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="h-3 w-28 rounded-full bg-slate-100" />
+                      <div className="h-2.5 w-20 rounded-full bg-slate-100/80" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         </nav>
 
         {/* User profile button */}

@@ -7,6 +7,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,8 +30,10 @@ public class BoardController {
 
     //Endpoint to fetch boards using workspaceId
     @GetMapping("/{workspaceId}")
-    public ResponseEntity<List<BoardDTO>> getBoardsByWorkspaceId(@PathVariable Long workspaceId) {
-        List<BoardDTO> boards = boardService.getBoardsByWorkspaceId(workspaceId);
+    public ResponseEntity<Page<BoardDTO>> getBoardsByWorkspaceId(
+            @PathVariable Long workspaceId,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<BoardDTO> boards = boardService.getBoardsByWorkspaceId(workspaceId, pageable);
         return ResponseEntity.ok(boards);
     }
 

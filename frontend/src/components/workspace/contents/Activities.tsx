@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Clock3,
   Plus,
@@ -127,12 +127,13 @@ const Activities: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [page, setPage] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
+  const bottomRef = useRef<HTMLDivElement | null>(null);
   //Fetch all activities
-  useEffect(() => {
-    const fetchActivities = async () => {
+  const fetchActivities = useCallback(
+    async (pageNumber: number) => {
       if (!workspaceId) {
         return;
       }
@@ -140,23 +141,60 @@ const Activities: React.FC = () => {
       try {
         setLoading(true);
 
-        const response = await axiosIns.get<Activity[]>(
-          `/api/task/activity/workspace/${workspaceId}`,
-        );
+        const res = await axiosIns.get<{
+          totalPages: number;
+          content: Activity[];
+        }>(`/api/task/activity/workspace/${workspaceId}`, {
+          params: {
+            page: pageNumber,
+            size: 10,
+          },
+        });
 
-        setActivities(response.data);
+        const data = res.data;
+        if (pageNumber === 0) {
+          setActivities(data.content);
+        } else {
+          setActivities((prev) => [...prev, ...data.content]);
+        }
+        setPage(pageNumber);
+        setHasMore(pageNumber + 1 < data.totalPages);
       } catch (err) {
         console.error("Failed to fetch activities", err);
         setError("Failed to load activities.");
       } finally {
         setLoading(false);
       }
-    };
+    },
+    [workspaceId],
+  );
 
-    fetchActivities();
-  }, [workspaceId]);
+  //Fetch initial activities
+  useEffect(() => {
+    fetchActivities(0);
+  }, [fetchActivities]);
+
+  //Pagination trigger if user scrolls to bottom
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          fetchActivities(page + 1);
+        }
+      },
+      {
+        threshold: 0.1,
+      },
+    );
+
+    if (bottomRef.current) {
+      observer.observe(bottomRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [fetchActivities, hasMore, loading, page]);
   return (
-    <div className="min-h-full bg-slate-50 px-4 py-6 sm:px-6 sm:py-10">
+    <div className="min-h-0 bg-slate-50 px-4 py-6 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-4xl">
         {/* Header */}
         <div className="mb-8">
@@ -186,65 +224,69 @@ const Activities: React.FC = () => {
           </div>
 
           <div className="divide-y divide-slate-100">
-            {loading ? (
-              <p className="px-4 py-12 text-center text-sm text-slate-400 sm:px-6">
-                Loading activities...
-              </p>
-            ) : error ? (
-              <p className="px-4 py-12 text-center text-sm text-rose-500 sm:px-6">
+            {activities.map((activity) => (
+              <div
+                key={activity.id}
+                className="flex gap-3 px-4 py-4 transition-colors duration-150 hover:bg-slate-50/70 sm:gap-4 sm:px-6"
+              >
+                {/* Icon */}
+                <div className="shrink-0">
+                  <ActivityIcon action={activity.action} />
+                </div>
+
+                {/* Content */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                    <p className="break-words text-sm leading-6 text-slate-600">
+                      <span className="inline-flex items-center gap-2 align-middle">
+                        <ActivityAvatar
+                          name={activity.userName}
+                          avatar={activity.userAvatar}
+                        />
+                        <span className="font-semibold text-slate-900">
+                          {activity.userName}
+                        </span>
+                      </span>{" "}
+                      <span className="text-slate-600">{activity.message}</span>
+                      {(activity.action === "ASSIGNED" ||
+                        activity.action === "UNASSIGNED") &&
+                        (activity.assignedToName ||
+                          activity.assignedToAvatar) && (
+                          <span className="ml-2 inline-flex align-middle">
+                            <ActivityAvatar
+                              name={activity.assignedToName}
+                              avatar={activity.assignedToAvatar}
+                            />
+                          </span>
+                        )}
+                    </p>
+
+                    <span className="shrink-0 text-xs tabular-nums text-slate-400 sm:pt-0.5">
+                      {activity.createdAt}
+                    </span>
+                  </div>
+
+                  <p className="mt-1.5 block w-fit max-w-full truncate rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200/70">
+                    {activity.boardName}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {/* Pagination trigger */}
+            {hasMore && (
+              <div ref={bottomRef} className="h-4" aria-hidden="true" />
+            )}
+            {loading && (
+              <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-slate-500">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-600" />
+                <span>Loading activities...</span>
+              </div>
+            )}
+
+            {!loading && error && (
+              <p className="px-4 py-6 text-center text-sm text-rose-500 sm:px-6">
                 {error}
               </p>
-            ) : (
-              activities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex gap-3 px-4 py-4 transition-colors duration-150 hover:bg-slate-50/70 sm:gap-4 sm:px-6"
-                >
-                  {/* Icon */}
-                  <div className="shrink-0">
-                    <ActivityIcon action={activity.action} />
-                  </div>
-
-                  {/* Content */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                      <p className="break-words text-sm leading-6 text-slate-600">
-                        <span className="inline-flex items-center gap-2 align-middle">
-                          <ActivityAvatar
-                            name={activity.userName}
-                            avatar={activity.userAvatar}
-                          />
-                          <span className="font-semibold text-slate-900">
-                            {activity.userName}
-                          </span>
-                        </span>{" "}
-                        <span className="text-slate-600">
-                          {activity.message}
-                        </span>
-                        {(activity.action === "ASSIGNED" ||
-                          activity.action === "UNASSIGNED") &&
-                          (activity.assignedToName ||
-                            activity.assignedToAvatar) && (
-                            <span className="ml-2 inline-flex align-middle">
-                              <ActivityAvatar
-                                name={activity.assignedToName}
-                                avatar={activity.assignedToAvatar}
-                              />
-                            </span>
-                          )}
-                      </p>
-
-                      <span className="shrink-0 text-xs tabular-nums text-slate-400 sm:pt-0.5">
-                        {activity.createdAt}
-                      </span>
-                    </div>
-
-                    <p className="mt-1.5 block w-fit max-w-full truncate rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-inset ring-slate-200/70">
-                      {activity.boardName}
-                    </p>
-                  </div>
-                </div>
-              ))
             )}
           </div>
         </div>

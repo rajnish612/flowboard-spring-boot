@@ -3,6 +3,9 @@ package com.server.monolith.task.controller;
 import com.server.monolith.task.dto.ActivityDTO;
 import com.server.monolith.task.service.ActivityService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,12 +23,13 @@ public class ActivityController {
 
     //Endpoint to fetch all activities
     @GetMapping("/workspace/{workspaceId}")
-    public ResponseEntity<List<ActivityDTO>> getWorkspaceActivities(
-            @PathVariable Long workspaceId
+    public ResponseEntity<Page<ActivityDTO>> getWorkspaceActivities(
+            @PathVariable Long workspaceId,
+            @PageableDefault(10) Pageable pageable
     ) {
 
         return ResponseEntity.ok(
-                activityService.getActivitiesByWorkspaceId(workspaceId)
+                activityService.getActivitiesByWorkspaceId(workspaceId,pageable)
         );
     }
 }

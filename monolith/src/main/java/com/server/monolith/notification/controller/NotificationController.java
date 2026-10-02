@@ -4,6 +4,9 @@ import com.server.monolith.notification.dto.NotificationDTO;
 import com.server.monolith.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -20,13 +23,14 @@ public class NotificationController {
 
     // Get all notifications belonging to the authenticated user.
     @GetMapping
-    public ResponseEntity<List<NotificationDTO>> getNotifications(
-            @AuthenticationPrincipal Jwt jwt
+    public ResponseEntity<Page<NotificationDTO>> getNotifications(
+            @AuthenticationPrincipal Jwt jwt,
+            @PageableDefault(size = 10) Pageable pageable
     ) {
         Long userId = jwt.getClaim("userId");
 
         return ResponseEntity.ok(
-                notificationService.getNotifications(userId)
+                notificationService.getNotifications(userId, pageable)
         );
     }
 

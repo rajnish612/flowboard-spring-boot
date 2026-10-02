@@ -13,6 +13,8 @@ import com.server.monolith.workspace.service.BoardService;
 import com.server.monolith.workspace.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -129,14 +131,15 @@ public class NotificationService {
 
 
     // Get all notifications of the authenticated user.
-    public List<NotificationDTO> getNotifications(Long userId) {
+    public Page<NotificationDTO> getNotifications(Long userId, Pageable pageable) {
         log.info("Fetching notifications for user with id: {}", userId);
         //Get notifications
-        List<Notification> notifications = notificationRepository
-                .findByRecipientIdOrderByCreatedAtDesc(userId);
+        Page<Notification> notificationPage = notificationRepository
+                .findByRecipientIdOrderByCreatedAtDesc(userId, pageable);
+        List<Notification> notifications = notificationPage.getContent();
         if (notifications.isEmpty()) {
             log.info("No notifications found for user with id: {}", userId);
-            return List.of();
+            return notificationPage.map(notification -> null);
         }
 
         // 2. Extract IDs, ignoring nulls and duplicates
@@ -183,14 +186,7 @@ public class NotificationService {
 
 
         // 5. Build NotificationDTOs
-        List<NotificationDTO> result = notifications.stream()
-                .filter(notification ->
-                        notification.getWorkspaceId() != null
-                                && notification.getBoardId() != null
-                                && workspaceMap.containsKey(notification.getWorkspaceId())
-                                && boardMap.containsKey(notification.getBoardId())
-                )
-                .map(notification -> {
+        Page<NotificationDTO> result = notificationPage.map(notification -> {
 
                     WorkspaceDTO workspace =
                             workspaceMap.get(notification.getWorkspaceId());
@@ -208,8 +204,7 @@ public class NotificationService {
                             workspace,
                             board
                     );
-                })
-                .toList();
+                });
         log.info("Fetched notifications {} for user with id: {}", notifications.size(), userId);
         return result;
     }

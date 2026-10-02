@@ -5,8 +5,19 @@ const BASE = "/api/task";
 
 // ─── BoardList endpoints ───────────────────────────────────────────────────
 
-export const fetchLists = (boardId: number) =>
-  axiosIns.get<BoardList[]>(`${BASE}/list/${boardId}`).then((r) => r.data);
+export type PagedResponse<T> = {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  number: number;
+};
+
+export const fetchLists = (boardId: number, page = 0, size = 10) =>
+  axiosIns
+    .get<PagedResponse<BoardList>>(`${BASE}/list/${boardId}`, {
+      params: { page, size },
+    })
+    .then((r) => r.data);
 
 export const createList = (boardId: number, name: string) =>
   axiosIns

@@ -16,7 +16,11 @@ type Member = {
   name: string;
   email: string;
   userId: number;
-  avatar: string;
+  avatar?: string | null;
+};
+
+type MembersPage = {
+  content: Member[];
 };
 // Modal for viewing and editing a card's details
 export const CardModal: React.FC<CardModalProps> = ({
@@ -48,8 +52,11 @@ export const CardModal: React.FC<CardModalProps> = ({
     const fetchMembers = async () => {
       setMembersLoading(true);
       try {
-        const res = await axiosIns.get(`/api/workspace/member/${workspaceId}`);
-        setMembers(res.data);
+        const res = await axiosIns.get<MembersPage>(
+          `/api/workspace/member/${workspaceId}`,
+          { params: { page: 0, size: 100 } },
+        );
+        setMembers(res.data.content);
       } catch (err) {
         console.error("Unable to fetch workspace members:", err);
       } finally {
@@ -160,11 +167,21 @@ export const CardModal: React.FC<CardModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => setIsMemberDropdownOpen((prev) => !prev)}
+                onClick={() => {
+                  if (!membersLoading) {
+                    setIsMemberDropdownOpen((prev) => !prev);
+                  }
+                }}
+                disabled={membersLoading}
                 className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
               >
                 <div className="flex min-w-0 items-center gap-2">
-                  {(() => {
+                  {membersLoading ? (
+                    <>
+                      <span className="h-6 w-6 animate-pulse rounded-full bg-slate-200" />
+                      <span className="h-3 w-24 animate-pulse rounded-full bg-slate-200" />
+                    </>
+                  ) : (() => {
                     const selected = members.find(
                       (m) => String(m.userId) === assignedTo,
                     );
@@ -226,9 +243,22 @@ export const CardModal: React.FC<CardModalProps> = ({
                     Unassigned
                   </button>
 
-                  {members
-                    .filter((member) => user?.id !== member.userId)
-                    .map((member) => {
+                  {membersLoading ? (
+                    <div className="space-y-2 px-2 py-3">
+                      {[...Array(3)].map((_, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-2"
+                        >
+                          <span className="h-7 w-7 animate-pulse rounded-full bg-slate-200" />
+                          <span className="h-3 flex-1 animate-pulse rounded-full bg-slate-200" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    members
+                      .filter((member) => user?.id !== member.userId)
+                      .map((member) => {
                       const selected = assignedTo === String(member.userId);
 
                       return (
@@ -271,7 +301,8 @@ export const CardModal: React.FC<CardModalProps> = ({
                           )}
                         </button>
                       );
-                    })}
+                      })
+                  )}
                 </div>
               )}
             </div>

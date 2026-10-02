@@ -10,6 +10,9 @@ import com.server.monolith.workspace.dto.BoardDTO;
 import com.server.monolith.workspace.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -57,13 +60,13 @@ public class ActivityService {
     }
 
     // fetch activities using workspaceId
-    public List<ActivityDTO> getActivitiesByWorkspaceId(Long workspaceId) {
+    public Page<ActivityDTO> getActivitiesByWorkspaceId(Long workspaceId, Pageable pageable) {
         log.info("Fetching activity for workspace with id: {}", workspaceId);
-        List<Activity> activities =
-                activityRepo.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
+        Page<Activity> activities =
+                activityRepo.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId, pageable);
         if (activities.isEmpty()) {
             log.info("No activities found for workspaceId={}", workspaceId);
-            return List.of();
+            return Page.empty(pageable);
         }
         List<Long> boardIds = activities.stream().map(Activity::getBoardId).filter(Objects::nonNull).distinct().toList();
         List<Long> userIds = activities.stream().map(Activity::getUserId).filter(Objects::nonNull).distinct().toList();
@@ -88,16 +91,17 @@ public class ActivityService {
                                 Function.identity()
                         ));
 
-        List<ActivityDTO> result = activities.stream()
-                .map(activity -> toDTO(
+
+        Page<ActivityDTO> result = activities.map(activity ->
+                toDTO(
                         activity,
                         usersMapped,
                         assignedToUsersMapped,
                         boardsMapped
-                ))
-                .toList();
+                )
+        );
         log.info("Fetched {} activities for workspaceId={}",
-                result.size(), workspaceId);
+                result.getNumberOfElements(), workspaceId);
         return result;
 
     }

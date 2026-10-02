@@ -15,6 +15,8 @@ import com.server.monolith.workspace.dto.WorkspaceDTO;
 import com.server.monolith.workspace.service.BoardService;
 import com.server.monolith.workspace.service.WorkspaceService;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,13 +39,12 @@ public class BoardListService {
     private final UserService userService;
 
     // Fetch all lists for a board, already ordered by position
-    public List<BoardListDTO> getListsByBoardId(Long boardId) {
+    public Page<BoardListDTO> getListsByBoardId(Long boardId, Pageable pageable) {
         log.info("Fetching lists for board with id: {}", boardId);
-        List<BoardListDTO> result = boardListRepo.findByBoardIdOrderByPositionAsc(boardId)
-                .stream()
-                .map(this::toDTO)
-                .toList();
-        log.info("Fetched {} lists for board with id: {}", result.size(), boardId);
+        Page<BoardListDTO> result = boardListRepo
+                .findByBoardIdOrderByPositionAsc(boardId, pageable)
+                .map(this::toDTO);
+        log.info("Fetched page {} of lists for board with id: {}", pageable.getPageNumber(), boardId);
         return result;
     }
 

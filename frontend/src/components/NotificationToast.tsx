@@ -1,5 +1,5 @@
 import { Bell, Check, CheckCheck,X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useAuth } from "../hooks/UseAuth";
 import { axiosIns } from "../utils/axiosInstance";
@@ -9,6 +9,14 @@ import {
 } from "../websocket/NotificationSocket";
 
 const NOTIFICATIONS_BASE = "/api/notifications";
+
+const sortNotifications = (items: NotificationSocketData[]) =>
+  [...items].sort((a, b) => {
+    const dateDifference =
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+
+    return dateDifference !== 0 ? dateDifference : b.id - a.id;
+  });
 
 const NotificationToast = () => {
   const { pathname } = useLocation();
@@ -21,6 +29,11 @@ const NotificationToast = () => {
   );
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const notificationsListRef = useRef<HTMLDivElement | null>(null);
+  const notificationsBottomRef = useRef<HTMLDivElement | null>(null);
 
   const isDashboard = pathname.startsWith("/dashboard");
   const visibleNotifications = notifications;
@@ -28,32 +41,84 @@ const NotificationToast = () => {
 
   // Keep the history list and toast synchronized when a notification arrives through WebSocket.
   const handleNotification = (incoming: NotificationSocketData) => {
-    setNotifications((current) => [
-      incoming,
-      ...current.filter((item) => item.id !== incoming.id),
-    ]);
+    setNotifications((current) =>
+      sortNotifications([
+        incoming,
+        ...current.filter((item) => item.id !== incoming.id),
+      ]),
+    );
     setNotification(incoming);
   };
 
   useNotificationSocket(handleNotification, Boolean(user));
 
-  // Refresh notification history when the menu opens or the authenticated user changes.
+  // Refresh the first notification page when the menu opens or the user changes.
   useEffect(() => {
     if (!user) return;
 
+    setLoading(true);
+    setPage(0);
+    setHasMore(true);
     axiosIns
-      .get<NotificationSocketData[]>(NOTIFICATIONS_BASE)
+      .get<{
+        content: NotificationSocketData[];
+        totalPages: number;
+      }>(NOTIFICATIONS_BASE, { params: { page: 0, size: 10 } })
       .then((response) => {
         setNotifications((current) => {
           const fetched = response.data;
-          const fetchedIds = new Set(fetched.map((item) => item.id));
+          const fetchedIds = new Set(fetched.content.map((item) => item.id));
           const liveItems = current.filter((item) => !fetchedIds.has(item.id));
-          return [...liveItems, ...fetched];
+          return sortNotifications([...liveItems, ...fetched.content]);
         });
+        setHasMore(1 < response.data.totalPages);
       })
       .catch(() => setNotifications([]))
       .finally(() => setLoading(false));
   }, [open, user]);
+
+  const fetchNextPage = async () => {
+    if (!user || loading || loadingMore || !hasMore) return;
+
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    try {
+      const response = await axiosIns.get<{
+        content: NotificationSocketData[];
+        totalPages: number;
+      }>(NOTIFICATIONS_BASE, {
+        params: { page: nextPage, size: 10 },
+      });
+      setNotifications((current) => {
+        const existingIds = new Set(current.map((item) => item.id));
+        return sortNotifications([
+          ...current,
+          ...response.data.content.filter((item) => !existingIds.has(item.id)),
+        ]);
+      });
+      setPage(nextPage);
+      setHasMore(nextPage + 1 < response.data.totalPages);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          void fetchNextPage();
+        }
+      },
+      { root: notificationsListRef.current, threshold: 0.1 },
+    );
+
+    if (notificationsBottomRef.current) {
+      observer.observe(notificationsBottomRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, page, user]);
 
   useEffect(() => {
     if (!notification) return;
@@ -159,7 +224,10 @@ const NotificationToast = () => {
                     </button>
                   </div>
                 </div>
-                <div className="max-h-96 divide-y divide-slate-100 overflow-y-auto">
+                <div
+                  ref={notificationsListRef}
+                  className="max-h-96 divide-y divide-slate-100 overflow-y-auto"
+                >
                   {loading ? (
                     <div className="px-4 py-12 text-center text-sm text-slate-400">
                       Loading notifications...
@@ -210,6 +278,18 @@ const NotificationToast = () => {
                         )}
                       </button>
                     ))
+                  )}
+                  {hasMore && (
+                    <div
+                      ref={notificationsBottomRef}
+                      className="h-4"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {loadingMore && (
+                    <div className="px-4 py-3 text-center text-xs text-slate-400">
+                      Loading more notifications...
+                    </div>
                   )}
                 </div>
               </div>

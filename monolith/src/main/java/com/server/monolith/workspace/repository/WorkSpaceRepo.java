@@ -1,6 +1,8 @@
 package com.server.monolith.workspace.repository;
 
 import com.server.monolith.workspace.model.Workspace;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,7 +17,7 @@ public interface WorkSpaceRepo extends JpaRepository<Workspace, Long> {
     List<Workspace> findByIdIn(List<Long> ids);
 
     //Find workspace using ownerId
-    List<Workspace> findByOwnerId(Long ownerId);
+    Page<Workspace> findByOwnerId(Long ownerId, Pageable pageable);
 
     //Check if the user is owner of the workspace or not
     @Query("""
@@ -36,7 +38,7 @@ public interface WorkSpaceRepo extends JpaRepository<Workspace, Long> {
             Long ownerId
     );
 
-    List<Workspace> findByNameStartingWithIgnoreCaseAndOwnerId(String workspaceName, Long ownerId);
+    Page<Workspace> findByNameStartingWithIgnoreCaseAndOwnerId(String workspaceName, Long ownerId, Pageable pageable);
 
     List<Workspace> findByIdInAndNameStartingWithIgnoreCase(List<Long> workspaceIds, String workspaceName);
 }

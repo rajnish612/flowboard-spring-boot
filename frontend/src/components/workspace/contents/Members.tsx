@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router";
 import { axiosIns } from "../../../utils/axiosInstance";
@@ -26,7 +26,10 @@ const Members: React.FC = () => {
   const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [members, setMembers] = useState<Member[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [removingMemberId, setRemovingMemberId] = useState<number | null>(null);
+  const bottomRef = React.useRef<HTMLDivElement | null>(null);
   const { user } = useAuth();
   const { workspace } = useWorkspaceContext();
   const canManageMembers = Boolean(user?.id && workspace?.ownerId === user.id);
@@ -103,23 +106,59 @@ const Members: React.FC = () => {
     }
   };
 
-  //Fetch members
-  React.useEffect(() => {
-    if (!workspaceId) return;
-    const fetchMembers = async () => {
+  // Fetch members page by page as the list is scrolled.
+  const fetchMembers = useCallback(
+    async (pageNumber: number) => {
+      if (!workspaceId) return;
+
       setLoading(true);
       try {
-        const res = await axiosIns.get(`/api/workspace/member/${workspaceId}`);
-        setMembers(res.data);
+        const res = await axiosIns.get<{
+          content: Member[];
+          totalPages: number;
+        }>(`/api/workspace/member/${workspaceId}`, {
+          params: {
+            page: pageNumber,
+            size: 10,
+          },
+        });
+
+        if (pageNumber === 0) {
+          setMembers(res.data.content);
+        } else {
+          setMembers((prev) => [...prev, ...res.data.content]);
+        }
+        setPage(pageNumber);
+        setHasMore(pageNumber + 1 < res.data.totalPages);
       } catch (err) {
         console.error("Unable to fetch workspace members:", err);
       } finally {
         setLoading(false);
       }
-    };
+    },
+    [workspaceId],
+  );
 
-    fetchMembers();
-  }, [workspaceId]);
+  React.useEffect(() => {
+    fetchMembers(0);
+  }, [fetchMembers]);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          fetchMembers(page + 1);
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (bottomRef.current) {
+      observer.observe(bottomRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [fetchMembers, hasMore, loading, page]);
   return (
     <div className="max-w-4xl">
       {/* Header */}
@@ -159,7 +198,7 @@ const Members: React.FC = () => {
 
       {/* Members list */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5">
-        {loading ? (
+        {loading && members.length === 0 ? (
           <div className="px-6 py-12 text-center text-sm text-slate-400">
             Loading members...
           </div>
@@ -176,7 +215,7 @@ const Members: React.FC = () => {
           <div className="divide-y divide-slate-100">
             {members.map((member) => (
               <div
-                key={member.id}
+                key={member.userId}
                 className="flex items-center justify-between px-6 py-4 transition-colors duration-150 hover:bg-slate-50/70"
               >
                 <div className="flex min-w-0 items-center gap-4">
@@ -230,6 +269,14 @@ const Members: React.FC = () => {
                 </div>
               </div>
             ))}
+            {hasMore && (
+              <div ref={bottomRef} className="h-4" aria-hidden="true" />
+            )}
+            {loading && members.length > 0 && (
+              <div className="px-6 py-4 text-center text-sm text-slate-400">
+                Loading more members...
+              </div>
+            )}
           </div>
         )}
       </div>

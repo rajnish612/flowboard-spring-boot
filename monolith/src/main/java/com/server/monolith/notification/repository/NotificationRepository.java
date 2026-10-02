@@ -1,6 +1,8 @@
 package com.server.monolith.notification.repository;
 
 import com.server.monolith.notification.entity.Notification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -11,7 +13,7 @@ import java.util.List;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     // Get all notifications of the authenticated user.
-    List<Notification> findByRecipientIdOrderByCreatedAtDesc(Long recipientId);
+    Page<Notification> findByRecipientIdOrderByCreatedAtDesc(Long recipientId, Pageable pageable);
 
     // Get only unread notifications of the authenticated user.
     List<Notification> findByRecipientIdAndReadFalseOrderByCreatedAtDesc(

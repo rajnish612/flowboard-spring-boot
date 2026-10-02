@@ -5,6 +5,9 @@ import com.server.monolith.workspace.dto.*;
 import com.server.monolith.workspace.service.WorkspaceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -31,9 +34,9 @@ public class WorkspaceController {
 
     //Endpoint to search workspaces using name
     @GetMapping("/search")
-    public ResponseEntity<List<WorkspaceDTO>> searchWorkspace(@RequestParam String workspaceName, @RequestParam boolean shared, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Page<WorkspaceDTO>> searchWorkspace(@RequestParam String workspaceName, @RequestParam boolean shared, @AuthenticationPrincipal Jwt jwt, @PageableDefault(value = 10) Pageable pageable) {
         Long userId = jwt.getClaim("userId");
-        return ResponseEntity.ok(workspaceService.findWorkspaceByNameStartingWith(workspaceName, shared, userId));
+        return ResponseEntity.ok(workspaceService.findWorkspaceByNameStartingWith(workspaceName, shared, userId, pageable));
     }
 
 
@@ -93,21 +96,26 @@ public class WorkspaceController {
 
     //End point to get all workspaces using owner id
     @GetMapping
-    public ResponseEntity<List<WorkspaceDTO>> getWorkspacesByOwnerId(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Page<WorkspaceDTO>> getWorkspacesByOwnerId(@AuthenticationPrincipal Jwt jwt, @PageableDefault(size = 10) Pageable pageable) {
         Long userId = jwt.getClaim("userId");
         if (userId == null) {
             throw new UsernameNotFoundException("Unauthorized");
         }
-        List<WorkspaceDTO> workspaces = workspaceService.getWorkspacesByOwnerId(userId);
+        Page<WorkspaceDTO> workspaces = workspaceService.getWorkspacesByOwnerId(userId, pageable);
         return ResponseEntity.ok(workspaces);
 
     }
 
     //End point to fetch members using workspace id
     @GetMapping("/member/{workspaceId}")
-    public ResponseEntity<List<WorkspaceMembersDTO>> getMembersByWorkspaceId(@AuthenticationPrincipal Jwt jwt, @PathVariable Long workspaceId) {
+    public ResponseEntity<Page<WorkspaceMembersDTO>> getMembersByWorkspaceId(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long workspaceId,
+            @PageableDefault(size = 10) Pageable pageable) {
         Long userId = jwt.getClaim("userId");
-        return ResponseEntity.ok(workspaceService.getWorkspaceMembersByWorkspaceId(workspaceId, userId));
+        return ResponseEntity.ok(
+                workspaceService.getWorkspaceMembersByWorkspaceId(workspaceId, userId, pageable)
+        );
     }
 
 
@@ -123,13 +131,13 @@ public class WorkspaceController {
 
     //Endpoint to fetch all shared workspaces
     @GetMapping("/shared")
-    public ResponseEntity<List<WorkspaceDTO>> getSharedWorkspaces(
-            @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Page<WorkspaceDTO>> getSharedWorkspaces(
+            @AuthenticationPrincipal Jwt jwt, @PageableDefault(size = 10) Pageable pageable) {
 
         Long userId = jwt.getClaim("userId");
 
         return ResponseEntity.ok(
-                workspaceService.getSharedWorkspaces(userId)
+                workspaceService.getSharedWorkspaces(userId, pageable)
         );
     }
 

@@ -8,12 +8,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 // Handles HTTP requests for board lists (Trello columns)
@@ -26,14 +28,16 @@ public class BoardListController {
     private final BoardEventPublisher boardEventPublisher;
     private final BoardListService boardListService;
 
-    // GET /list/{boardId} — fetch all lists for a board
+    // GET /list/{boardId} — fetch a page of lists for a board
     @PreAuthorize(
             "@taskAuthorization.hasBoardAccess(#boardId, authentication)"
     )
     @GetMapping("/{boardId}")
-    public ResponseEntity<List<BoardListDTO>> getListsByBoardId(@PathVariable Long boardId) {
+    public ResponseEntity<Page<BoardListDTO>> getListsByBoardId(
+            @PathVariable Long boardId,
+            @PageableDefault(size = 10, sort = "position") Pageable pageable) {
         log.info("Fetching lists for board {}", boardId);
-        return ResponseEntity.ok(boardListService.getListsByBoardId(boardId));
+        return ResponseEntity.ok(boardListService.getListsByBoardId(boardId, pageable));
     }
 
     // POST /list/create — create a new list

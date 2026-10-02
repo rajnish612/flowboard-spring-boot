@@ -1,6 +1,8 @@
 package com.server.monolith.task.repository;
 
 import com.server.monolith.task.model.BoardList;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +16,8 @@ import java.util.Optional;
 public interface BoardListRepo extends JpaRepository<BoardList, Long> {
 
     // Fetch all lists for a given board, ordered by position
+    Page<BoardList> findByBoardIdOrderByPositionAsc(Long boardId, Pageable pageable);
+
     List<BoardList> findByBoardIdOrderByPositionAsc(Long boardId);
 
     // Get the current highest position value for a board's lists
