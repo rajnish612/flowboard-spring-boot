@@ -16,52 +16,58 @@ services:
   eureka-server:
     build: ./eureka-server
     ports:
-      - "8761:8761"
+      - "${EUREKA_SERVER_PORT:-8761}:${EUREKA_SERVER_PORT:-8761}"
     environment:
-      SERVER_PORT: 8761
+      SERVER_PORT: ${EUREKA_SERVER_PORT:-8761}
 
   authservice:
     build: ./authservice
     ports:
-      - "8000:8000"
+      - "${AUTH_SERVICE_PORT:-8000}:${AUTH_SERVICE_PORT:-8000}"
     depends_on:
       postgres:
         condition: service_healthy
       eureka-server:
         condition: service_started
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/users
+      DB_URL: ${AUTH_DB_URL:-jdbc:postgresql://postgres:5432/users}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-user}
+      DB_DRIVER: ${DB_DRIVER:-org.postgresql.Driver}
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID in .env}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?Set GOOGLE_CLIENT_SECRET in .env}
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka/}
       CLIENT_URI: ${CLIENT_URI:-http://localhost:3000}
-      GOOGLE_REDIRECT_URI: http://localhost:8081/login/oauth2/code/google
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8081/login/oauth2/code/google}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      COOKIE_SAME_SITE: ${COOKIE_SECURE:-Lax}
+      COOKIE_SAME_SITE: ${COOKIE_SAME_SITE:-Lax}
+      SERVER_PORT: ${AUTH_SERVICE_PORT:-8000}
 
   workspaceservice:
     build: ./workspaceservice
     ports:
-      - "8082:8082"
+      - "${WORKSPACE_SERVICE_PORT:-8082}:${WORKSPACE_SERVICE_PORT:-8082}"
     depends_on:
       postgres:
         condition: service_healthy
       eureka-server:
         condition: service_started
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/workspace_service
+      DB_URL: ${WORKSPACE_DB_URL:-jdbc:postgresql://postgres:5432/workspace_service}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-user}
+      DB_DRIVER: ${DB_DRIVER:-org.postgresql.Driver}
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka/}
+      SERVER_PORT: ${WORKSPACE_SERVICE_PORT:-8082}
 
   taskservice:
     build: ./taskservice
     ports:
-      - "8083:8083"
+      - "${TASK_SERVICE_PORT:-8083}:${TASK_SERVICE_PORT:-8083}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,18 +78,21 @@ services:
       kafka-2:
         condition: service_started
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/task_db
+      DB_URL: ${TASK_DB_URL:-jdbc:postgresql://postgres:5432/task_db}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-user}
+      DB_DRIVER: ${DB_DRIVER:-org.postgresql.Driver}
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka/}
       WEBSOCKET_ALLOWED_ORIGINS: ${WEBSOCKET_ALLOWED_ORIGINS:-http://localhost:3000}
-      KAFKA_BOOTSTRAP_SERVERS: kafka-1:19092,kafka-2:19092
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka-1:19092,kafka-2:19092}
+      SERVER_PORT: ${TASK_SERVICE_PORT:-8083}
 
   notificationservice:
     build: ./notificationservice
     ports:
-      - "8084:8084"
+      - "${NOTIFICATION_SERVICE_PORT:-8084}:${NOTIFICATION_SERVICE_PORT:-8084}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -94,18 +103,21 @@ services:
       kafka-2:
         condition: service_started
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/notification_db
+      DB_URL: ${NOTIFICATION_DB_URL:-jdbc:postgresql://postgres:5432/notification_db}
       DB_USERNAME: ${DB_USERNAME:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-user}
+      DB_DRIVER: ${DB_DRIVER:-org.postgresql.Driver}
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
-      EUREKA_URL: http://eureka-server:8761/eureka/
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka/}
       WEBSOCKET_ALLOWED_ORIGINS: ${WEBSOCKET_ALLOWED_ORIGINS:-http://localhost:3000}
-      KAFKA_BOOTSTRAP_SERVERS: kafka-1:19092,kafka-2:19092
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka-1:19092,kafka-2:19092}
+      SERVER_PORT: ${NOTIFICATION_SERVICE_PORT:-8084}
 
   gateway:
     build: ./gateway
     ports:
-      - "8081:8081"
+      - "${GATEWAY_PORT:-8081}:${GATEWAY_PORT:-8081}"
     depends_on:
       eureka-server:
         condition: service_started
@@ -116,16 +128,17 @@ services:
       taskservice:
         condition: service_started
     environment:
-      EUREKA_URL: http://eureka-server:8761/eureka/
-      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka/}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      SERVER_PORT: ${GATEWAY_PORT:-8081}
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE_URL: http://localhost:8081
-        VITE_TASK_WS_URL: ws://localhost:8083/ws
-        VITE_NOTIFICATION_WS_URL: ws://localhost:8084/ws
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8081}
+        VITE_TASK_WS_URL: ${VITE_TASK_WS_URL:-ws://localhost:8081/ws}
+        VITE_NOTIFICATION_WS_URL: ${VITE_NOTIFICATION_WS_URL:-ws://localhost:8081/ws}
     ports:
       - "3000:80"
     depends_on:
