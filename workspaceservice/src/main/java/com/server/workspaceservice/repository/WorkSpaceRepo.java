@@ -2,6 +2,8 @@ package com.server.workspaceservice.repository;
 
 import com.server.workspaceservice.model.Workspace;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,6 +18,7 @@ public interface WorkSpaceRepo extends JpaRepository<Workspace, Long> {
 
     //Find workspace using ownerId
     List<Workspace> findByOwnerId(Long ownerId);
+    Page<Workspace> findByOwnerId(Long ownerId, Pageable pageable);
 
     //Check if the user is owner of the workspace or not
     @Query("""
@@ -35,9 +38,12 @@ public interface WorkSpaceRepo extends JpaRepository<Workspace, Long> {
             List<Long> ids,
             Long ownerId
     );
+    Page<Workspace> findByIdInAndOwnerIdNot(List<Long> ids, Long ownerId, Pageable pageable);
 
     List<Workspace> findByNameStartingWithIgnoreCaseAndOwnerId(String workspaceName, Long ownerId);
+    Page<Workspace> findByNameStartingWithIgnoreCaseAndOwnerId(String workspaceName, Long ownerId, Pageable pageable);
 
     List<Workspace> findByIdInAndNameStartingWithIgnoreCase(List<Long> workspaceIds, String workspaceName);
+    Page<Workspace> findByIdInAndNameStartingWithIgnoreCase(List<Long> workspaceIds, String workspaceName, Pageable pageable);
 
 }

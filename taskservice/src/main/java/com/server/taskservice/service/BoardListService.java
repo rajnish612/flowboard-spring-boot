@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.server.taskservice.model.NotificationType;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 // Service for managing Trello-style lists within a board
 @Slf4j
@@ -35,14 +37,12 @@ public class BoardListService {
         private final NotificationEventPublisher notificationEventPublisher;
 
         // Fetch all lists for a board, already ordered by position
-        public List<BoardListDTO> getListsByBoardId(Long boardId) {
+        public Page<BoardListDTO> getListsByBoardId(Long boardId, Pageable pageable) {
                 log.info("Fetching lists for board with id: {}", boardId);
 
-                List<BoardListDTO> result = boardListRepo.findByBoardIdOrderByPositionAsc(boardId)
-                                .stream()
-                                .map(this::toDTO)
-                                .toList();
-                log.info("Fetched {} lists for board with id: {}", result.size(), boardId);
+                Page<BoardListDTO> result = boardListRepo.findByBoardIdOrderByPositionAsc(boardId, pageable)
+                                .map(this::toDTO);
+                log.info("Fetched {} lists for board with id: {}", result.getNumberOfElements(), boardId);
                 return result;
         }
 

@@ -4,6 +4,8 @@ package com.server.workspaceservice.repository;
 import com.server.workspaceservice.model.WorkspaceMembers;
 import com.server.workspaceservice.model.WorkspaceRole;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,6 +19,7 @@ public interface WorkspaceMemberRepo extends JpaRepository<WorkspaceMembers, Lon
 
     //Fetch members using workspace id;
     List<WorkspaceMembers> findByWorkspaceId(Long id);
+    Page<WorkspaceMembers> findByWorkspaceId(Long id, Pageable pageable);
 
     Optional<WorkspaceMembers> findByWorkspaceIdAndUserId(
             Long workspaceId,

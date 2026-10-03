@@ -16,6 +16,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 @RequiredArgsConstructor
 @RestController
@@ -29,9 +32,9 @@ public class BoardController {
 
     //Endpoint to fetch boards using workspaceId
     @GetMapping("/{workspaceId}")
-    public ResponseEntity<List<BoardDTO>> getBoardsByWorkspaceId(@PathVariable Long workspaceId) {
-        List<BoardDTO> boards = boardService.getBoardsByWorkspaceId(workspaceId);
-        return ResponseEntity.ok(boards);
+    public ResponseEntity<Page<BoardDTO>> getBoardsByWorkspaceId(@PathVariable Long workspaceId,
+            @PageableDefault(size = 10) Pageable pageable) {
+        return ResponseEntity.ok(boardService.getBoardsByWorkspaceId(workspaceId, pageable));
     }
 
 

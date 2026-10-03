@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import org.springframework.security.access.AccessDeniedException;
 import jakarta.persistence.EntityNotFoundException;
@@ -26,25 +28,24 @@ public class BoardService {
         private final WorkspaceMemberRepo workspaceMemberRepo;
 
         // Method to get boards by workspace id
-        public List<BoardDTO> getBoardsByWorkspaceId(Long workspaceId) {
+        public Page<BoardDTO> getBoardsByWorkspaceId(Long workspaceId, Pageable pageable) {
                 log.info("Fetching boards for workspaceId: {}", workspaceId);
 
-                List<BoardDTO> result = boardRepo.findBoardsByWorkspaceId(workspaceId)
-                                .stream()
-                                .map(b -> BoardDTO
+                Page<BoardDTO> result = boardRepo.findBoardsByWorkspaceId(workspaceId, pageable)
+                                .map(b ->
+                                BoardDTO
                                                 .builder()
                                                 .id(b.getId())
                                                 .workspaceId(b.getWorkspaceId())
                                                 .name(b.getName())
                                                 .description(b.getDescription())
                                                 .backgroundImage(b.getBackgroundImage())
-                                                .build())
-                                .toList();
+                                                .build());
                 if (result.isEmpty()) {
                         log.debug("No boards found for workspaceId={}", workspaceId);
-                        return List.of();
+                        return result;
                 }
-                log.info("Fetched {} boards for workspaceId: {}", result.size(), workspaceId);
+                log.info("Fetched {} boards for workspaceId: {}", result.getNumberOfElements(), workspaceId);
                 return result;
         }
 

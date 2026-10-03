@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 @RestController
 @RequestMapping("/activity")
@@ -20,12 +23,13 @@ public class ActivityController {
 
     //Endpoint to fetch all activities
     @GetMapping("/workspace/{workspaceId}")
-    public ResponseEntity<List<ActivityDTO>> getWorkspaceActivities(
-            @PathVariable Long workspaceId
+    public ResponseEntity<Page<ActivityDTO>> getWorkspaceActivities(
+            @PathVariable Long workspaceId,
+            @PageableDefault(size = 10) Pageable pageable
     ) {
 
         return ResponseEntity.ok(
-                activityService.getActivitiesByWorkspaceId(workspaceId)
+                activityService.getActivitiesByWorkspaceId(workspaceId, pageable)
         );
     }
 }

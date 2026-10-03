@@ -239,6 +239,9 @@ const Board: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addingList, setAddingList] = useState(false);
+  const [listsPage, setListsPage] = useState(0);
+  const [listsHasMore, setListsHasMore] = useState(true);
+  const [listsLoading, setListsLoading] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [top5MembersLoading, setTop5MembersLoading] = useState<boolean>(true);
   const [top5MembersAndTotalMembersCount, setTop5MembersAndTotalMembersCount] =
@@ -247,69 +250,164 @@ const Board: React.FC = () => {
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
+  const [membersPage, setMembersPage] = useState(0);
+  const [membersHasMore, setMembersHasMore] = useState(true);
+  const membersBottomRef = useRef<HTMLDivElement | null>(null);
+  const membersListRef = useRef<HTMLDivElement | null>(null);
+  const listsBottomRef = useRef<HTMLDivElement | null>(null);
   // Drag state stored in a ref to avoid re-renders
   const dragCard = useRef<Card | null>(null);
   const dragListId = useRef<number | null>(null);
+
   // ── Initial load ────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    const fetchAllCardsAndLists = async () => {
+  const fetchLists = useCallback(
+    async (pageNumber: number) => {
       if (!numericBoardId) return;
-      setLoading(true);
-      try {
-        const [boardRes, listsRes] = await Promise.all([
-          axiosIns.get<{ workspaceId: number; backgroundImage: string }>(
-            `/api/workspace/board/detail/${boardId}`,
-          ),
-          axiosIns.get<BoardList[]>(`${BASE}/list/${boardId}`),
-        ]);
-        setWorkspaceId(boardRes.data.workspaceId);
-        setBoardBackground(boardRes.data.backgroundImage);
 
-        const res = listsRes;
-        setLists(res.data);
-        //Fetch all lists in parallel
+      setListsLoading(true);
+      try {
+        const res = await axiosIns.get<{
+          content: BoardList[];
+          totalPages: number;
+        }>(`${BASE}/list/${numericBoardId}`, {
+          params: { page: pageNumber, size: 1 },
+        });
+        const pageLists = res.data.content;
+
+        setLists((previous) =>
+          pageNumber === 0 ? pageLists : [...previous, ...pageLists],
+        );
+        setListsPage(pageNumber);
+        setListsHasMore(pageNumber + 1 < res.data.totalPages);
+
         const entries = await Promise.all(
-          res.data.map(
-            (l) =>
-              axiosIns
-                .get<Card[]>(`${BASE}/card/${l.id}`)
-                .then((r) => [l.id, r.data] as [number, Card[]]),
-            // api.fetchCards(l.id).then((c) => [l.id, c] as [number, Card[]]),
+          pageLists.map((list) =>
+            axiosIns
+              .get<Card[]>(`${BASE}/card/${list.id}`)
+              .then((cardsRes) => [list.id, cardsRes.data] as [number, Card[]]),
           ),
         );
+        setCards((previous) => ({
+          ...previous,
+          ...Object.fromEntries(entries),
+        }));
+      } catch {
+        setError("Failed to load board lists. Please try again.");
+      } finally {
+        setListsLoading(false);
+      }
+    },
+    [numericBoardId],
+  );
 
-        setCards(Object.fromEntries(entries));
-        setLoading(true);
+  //Fetch board data and lists
+  useEffect(() => {
+    const fetchBoard = async () => {
+      if (!numericBoardId) return;
+      setLoading(true);
+      setLists([]);
+      setCards({});
+      setListsPage(0);
+      setListsHasMore(true);
+      try {
+        const boardRes = await axiosIns.get<{
+          workspaceId: number;
+          backgroundImage: string;
+        }>(`/api/workspace/board/detail/${numericBoardId}`);
+        setWorkspaceId(boardRes.data.workspaceId);
+        setBoardBackground(boardRes.data.backgroundImage);
+        await fetchLists(0);
       } catch {
         setError("Failed to load board. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-    fetchAllCardsAndLists();
-  }, [numericBoardId, boardId]);
+    fetchBoard();
+  }, [fetchLists, numericBoardId]);
 
-  //Fetch all members
+  //Fetch lists page by page
   useEffect(() => {
-    if (!isMembersModalOpen || !workspaceId) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && listsHasMore && !listsLoading) {
+          fetchLists(listsPage + 1);
+        }
+      },
+      { threshold: 0.1 },
+    );
 
-    const fetchMembers = async () => {
+    if (listsBottomRef.current) {
+      observer.observe(listsBottomRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [fetchLists, listsHasMore, listsLoading, listsPage]);
+
+  // Fetch members page by page as the modal is scrolled.
+  const fetchMembers = useCallback(
+    async (pageNumber: number) => {
+      if (!isMembersModalOpen || !workspaceId) return;
+
       setMembersLoading(true);
 
       try {
-        const res = await axiosIns.get(`/api/workspace/member/${workspaceId}`);
+        const res = await axiosIns.get<{
+          content: Member[];
+          totalPages: number;
+        }>(`/api/workspace/member/${workspaceId}`, {
+          params: {
+            page: pageNumber,
+            size: 10,
+          },
+        });
 
-        setMembers(res.data);
+        if (pageNumber === 0) {
+          setMembers(res.data.content);
+        } else {
+          setMembers((prev) => [...prev, ...res.data.content]);
+        }
+        setMembersPage(pageNumber);
+        setMembersHasMore(pageNumber + 1 < res.data.totalPages);
       } catch (err) {
         console.error("Unable to fetch workspace members:", err);
       } finally {
         setMembersLoading(false);
       }
-    };
+    },
+    [isMembersModalOpen, workspaceId],
+  );
 
-    fetchMembers();
-  }, [isMembersModalOpen, workspaceId]);
+  //Fetch initial members
+  useEffect(() => {
+    if (!isMembersModalOpen) return;
+
+    setMembers([]);
+    setMembersPage(0);
+    setMembersHasMore(true);
+    fetchMembers(0);
+  }, [fetchMembers, isMembersModalOpen]);
+
+  //Pagination trigger
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && membersHasMore && !membersLoading) {
+          fetchMembers(membersPage + 1);
+        }
+      },
+      {
+        root: membersListRef.current,
+        threshold: 0.1,
+      },
+    );
+
+    if (membersBottomRef.current) {
+      observer.observe(membersBottomRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [fetchMembers, membersHasMore, membersLoading, membersPage]);
   //Fetch 5 members and total members count
   useEffect(() => {
     if (!workspaceId) return;
@@ -347,6 +445,7 @@ const Board: React.FC = () => {
     [numericBoardId],
   );
 
+  //Rename list
   const handleRenameList = useCallback(async (listId: number, name: string) => {
     try {
       const res = await axiosIns.put<BoardList>(`${BASE}/list/${listId}`, {
@@ -359,6 +458,7 @@ const Board: React.FC = () => {
     }
   }, []);
 
+  //Delete list
   const handleDeleteList = useCallback(
     async (listId: number) => {
       try {
@@ -376,6 +476,7 @@ const Board: React.FC = () => {
     [numericBoardId],
   );
 
+  //Move list
   const handleDragStartList = useCallback(
     (e: React.DragEvent, listId: number) => {
       dragListId.current = listId;
@@ -391,6 +492,7 @@ const Board: React.FC = () => {
 
   const isListDragging = useCallback(() => dragListId.current !== null, []);
 
+  //Drop list after moving
   const handleDropList = useCallback(
     async (e: React.DragEvent, targetIndex: number) => {
       e.preventDefault();
@@ -438,6 +540,8 @@ const Board: React.FC = () => {
   );
 
   // ── Card actions ────────────────────────────────────────────────────────────
+
+  //Add card
   const handleAddCard = useCallback(
     async (listId: number, title: string) => {
       try {
@@ -460,6 +564,19 @@ const Board: React.FC = () => {
     [boardId],
   );
 
+  const handleSaveCard = useCallback((updatedCard: Card) => {
+    setCards((previous) => {
+      const next = { ...previous };
+      const currentList = next[updatedCard.listId] ?? [];
+      next[updatedCard.listId] = currentList.map((card) =>
+        card.id === updatedCard.id ? updatedCard : card,
+      );
+      return next;
+    });
+    setSelectedCard(null);
+  }, []);
+
+  //Function to delete card
   const handleDeleteCard = useCallback(
     async (cardId: number, listId: number) => {
       try {
@@ -475,16 +592,6 @@ const Board: React.FC = () => {
     },
     [boardId],
   );
-
-  const handleSaveCard = useCallback((updated: Card) => {
-    setCards((prev) => ({
-      ...prev,
-      [updated.listId]: (prev[updated.listId] ?? []).map((c) =>
-        c.id === updated.id ? updated : c,
-      ),
-    }));
-    setSelectedCard(null);
-  }, []);
 
   // ── Drag & Drop ─────────────────────────────────────────────────────────────
   const handleDragStart = useCallback((e: React.DragEvent, card: Card) => {
@@ -734,40 +841,56 @@ const Board: React.FC = () => {
             className="group flex w-fit items-center gap-2 self-end rounded-full border border-white/15 bg-white/10 py-1 pl-1.5 pr-3 shadow-sm backdrop-blur-md transition-all duration-200 hover:border-white/25 hover:bg-white/15 sm:self-auto"
             title={`${top5MembersAndTotalMembersCount?.totalMembers ?? 0} members`}
           >
-            <div className="flex -space-x-2">
-              {top5MembersAndTotalMembersCount?.members
-                .slice(0, 5)
-                .map((member, index) =>
-                  member.avatar ? (
-                    <img
-                      key={member.id}
-                      src={member.avatar}
-                      alt={member.name}
-                      title={member.name}
-                      className="relative h-6 w-6 rounded-full border-2 border-[#5146a5] object-cover transition-transform duration-200 hover:z-10 hover:scale-110 sm:h-8 sm:w-8"
-                      style={{ zIndex: 5 - index }}
+            {top5MembersLoading ? (
+              <>
+                <div className="flex -space-x-2">
+                  {[...Array(3)].map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-6 w-6 animate-pulse rounded-full border-2 border-[#5146a5] bg-white/30 sm:h-8 sm:w-8"
                     />
-                  ) : (
-                    <span
-                      key={member.id}
-                      title={member.name}
-                      className="relative flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#5146a5] bg-gradient-to-br from-indigo-100 to-violet-200 text-[9px] font-bold text-indigo-700 transition-transform duration-200 hover:z-10 hover:scale-110 sm:h-8 sm:w-8 sm:text-xs"
-                      style={{ zIndex: 5 - index }}
-                    >
-                      {member.name?.charAt(0).toUpperCase() || "?"}
-                    </span>
-                  ),
-                )}
-            </div>
+                  ))}
+                </div>
+                <div className="h-3 w-16 animate-pulse rounded-full bg-white/30" />
+              </>
+            ) : (
+              <>
+                <div className="flex -space-x-2">
+                  {top5MembersAndTotalMembersCount?.members
+                    .slice(0, 5)
+                    .map((member, index) =>
+                      member.avatar ? (
+                        <img
+                          key={member.id}
+                          src={member.avatar}
+                          alt={member.name}
+                          title={member.name}
+                          className="relative h-6 w-6 rounded-full border-2 border-[#5146a5] object-cover transition-transform duration-200 hover:z-10 hover:scale-110 sm:h-8 sm:w-8"
+                          style={{ zIndex: 5 - index }}
+                        />
+                      ) : (
+                        <span
+                          key={member.id}
+                          title={member.name}
+                          className="relative flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#5146a5] bg-gradient-to-br from-indigo-100 to-violet-200 text-[9px] font-bold text-indigo-700 transition-transform duration-200 hover:z-10 hover:scale-110 sm:h-8 sm:w-8 sm:text-xs"
+                          style={{ zIndex: 5 - index }}
+                        >
+                          {member.name?.charAt(0).toUpperCase() || "?"}
+                        </span>
+                      ),
+                    )}
+                </div>
 
-            <span className="whitespace-nowrap text-[11px] font-medium text-white/90 sm:text-xs">
-              {top5MembersAndTotalMembersCount?.totalMembers ?? 0}
-              <span className="ml-1 text-white/60">
-                {top5MembersAndTotalMembersCount?.totalMembers === 1
-                  ? "Member"
-                  : "Members"}
-              </span>
-            </span>
+                <span className="whitespace-nowrap text-[11px] font-medium text-white/90 sm:text-xs">
+                  {top5MembersAndTotalMembersCount?.totalMembers ?? 0}
+                  <span className="ml-1 text-white/60">
+                    {top5MembersAndTotalMembersCount?.totalMembers === 1
+                      ? "Member"
+                      : "Members"}
+                  </span>
+                </span>
+              </>
+            )}
           </button>
         </div>
 
@@ -775,26 +898,37 @@ const Board: React.FC = () => {
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-6 pt-4 sm:px-6 sm:pt-5">
           <div className="flex flex-wrap items-start gap-3 sm:gap-4">
             {lists.map((list, listIndex) => (
-              <>
-                <Column
-                  key={list.id}
-                  list={list}
-                  listIndex={listIndex}
-                  cards={cards[list.id] ?? []}
-                  onAddCard={handleAddCard}
-                  onDeleteCard={handleDeleteCard}
-                  onClickCard={setSelectedCard}
-                  onDeleteList={handleDeleteList}
-                  onRenameList={handleRenameList}
-                  onDragStartList={handleDragStartList}
-                  onDragEndList={handleDragEndList}
-                  isListDragging={isListDragging}
-                  onDropList={handleDropList}
-                  onDragStartCard={handleDragStart}
-                  onDropCard={handleDrop}
-                />
-              </>
+              <Column
+                key={list.id}
+                list={list}
+                listIndex={listIndex}
+                cards={cards[list.id] ?? []}
+                onAddCard={handleAddCard}
+                onDeleteCard={handleDeleteCard}
+                onClickCard={setSelectedCard}
+                onDeleteList={handleDeleteList}
+                onRenameList={handleRenameList}
+                onDragStartList={handleDragStartList}
+                onDragEndList={handleDragEndList}
+                isListDragging={isListDragging}
+                onDropList={handleDropList}
+                onDragStartCard={handleDragStart}
+                onDropCard={handleDrop}
+              />
             ))}
+
+            {listsHasMore && (
+              <div
+                ref={listsBottomRef}
+                className="h-4 w-full shrink-0"
+                aria-hidden="true"
+              />
+            )}
+            {listsLoading && lists.length > 0 && (
+              <div className="w-64 shrink-0 py-3 text-center text-sm text-white/75">
+                Loading more lists...
+              </div>
+            )}
 
             {addingList ? (
               <AddListForm
@@ -871,8 +1005,8 @@ const Board: React.FC = () => {
               </div>
 
               {/* Members */}
-              <div className="overflow-y-auto px-3 py-3">
-                {membersLoading ? (
+              <div ref={membersListRef} className="overflow-y-auto px-3 py-3">
+                {membersLoading && members.length === 0 ? (
                   <div className="space-y-2">
                     {[...Array(5)].map((_, index) => (
                       <div
@@ -924,6 +1058,18 @@ const Board: React.FC = () => {
                         </div>
                       </div>
                     ))}
+                    {membersHasMore && (
+                      <div
+                        ref={membersBottomRef}
+                        className="h-4"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {membersLoading && members.length > 0 && (
+                      <div className="px-3 py-3 text-center text-xs text-slate-400">
+                        Loading more members...
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -931,6 +1077,17 @@ const Board: React.FC = () => {
           </div>
         )}
       </div>
+      {selectedCard && (
+        <CardModal
+          card={selectedCard}
+          workspaceId={workspaceId}
+          onClose={() => setSelectedCard(null)}
+          onSave={handleSaveCard}
+          onDelete={() =>
+            handleDeleteCard(selectedCard.id, selectedCard.listId)
+          }
+        />
+      )}
     </div>
   );
 };

@@ -2,6 +2,8 @@ package com.server.taskservice.repository;
 
 import com.server.taskservice.model.BoardList;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,6 +17,7 @@ public interface BoardListRepo extends JpaRepository<BoardList, Long> {
 
     // Fetch all lists for a given board, ordered by position
     List<BoardList> findByBoardIdOrderByPositionAsc(Long boardId);
+    Page<BoardList> findByBoardIdOrderByPositionAsc(Long boardId, Pageable pageable);
 
     // Get the current highest position value for a board's lists
     @Query("SELECT MAX(l.position) FROM BoardList l WHERE l.boardId = :boardId")

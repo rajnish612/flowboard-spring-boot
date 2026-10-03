@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+﻿import React, { useCallback, useState } from "react";
 import { axiosIns } from "../../../utils/axiosInstance";
 import { useParams, Link } from "react-router";
 import { isAxiosError } from "axios";
@@ -103,6 +103,9 @@ const Boards: React.FC = () => {
   const [boards, setBoards] = React.useState<Board[]>([]);
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const [loading, setLoading] = useState<boolean>(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const bottomRef = React.useRef<HTMLDivElement | null>(null);
   const [boardDTO, setBoardDTO] = useState<Board>({
     backgroundImage: "",
     name: "",
@@ -113,21 +116,61 @@ const Boards: React.FC = () => {
   const [loadError, setLoadError] = useState(false);
   const [createError, setCreateError] = useState(false);
   const [selectedBackground, setSelectedBackground] = useState(backgrounds[0]);
-  React.useEffect(() => {
-    //Method to fetch initial boards based on the selected workspace
-    const fetchBoards = async () => {
+
+  //Fetch boards
+  const fetchBoards = useCallback(
+    async (pageNumber: number) => {
+      if (!workspaceId) return;
+
       setLoading(true);
       try {
-        const res = await axiosIns.get(`/api/workspace/board/${workspaceId}`);
-        setBoards(res.data);
+        const res = await axiosIns.get<{
+          content: Board[];
+          totalPages: number;
+        }>(`/api/workspace/board/${workspaceId}`, {
+          params: { page: pageNumber, size: 10 },
+        });
+
+        if (pageNumber === 0) {
+          setBoards(res.data.content);
+        } else {
+          setBoards((prev) => [...prev, ...res.data.content]);
+        }
+        setPage(pageNumber);
+        setHasMore(pageNumber + 1 < res.data.totalPages);
       } catch (err) {
         setLoadError(true);
       } finally {
         setLoading(false);
       }
-    };
-    fetchBoards();
-  }, [workspaceId]);
+    },
+    [workspaceId],
+  );
+
+  React.useEffect(() => {
+    setBoards([]);
+    setPage(0);
+    setHasMore(true);
+    setLoadError(false);
+    fetchBoards(0);
+  }, [fetchBoards]);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          fetchBoards(page + 1);
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (bottomRef.current) {
+      observer.observe(bottomRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [fetchBoards, hasMore, loading, page]);
 
   // Function to create a new board
   const createBoard = async () => {
@@ -244,6 +287,14 @@ const Boards: React.FC = () => {
               </Link>
             ))}
 
+            {hasMore && (
+              <div ref={bottomRef} className="h-4 w-full" aria-hidden="true" />
+            )}
+            {loading && boards.length > 0 && (
+              <div className="w-full py-3 text-center text-sm text-gray-400">
+                Loading more boards...
+              </div>
+            )}
             <CreateBoardCard onClick={() => setIsCreateModalOpen(true)} />
           </>
         )}

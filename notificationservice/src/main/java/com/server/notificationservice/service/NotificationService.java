@@ -16,6 +16,9 @@ import com.server.notificationservice.websocket.NotificationPublisher;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -119,14 +122,15 @@ public class NotificationService {
         }
 
         // Get all notifications of the authenticated user.
-        public List<NotificationDTO> getNotifications(Long userId) {
+        public Page<NotificationDTO> getNotifications(Long userId, Pageable pageable) {
                 log.info("Fetching notifications for user with id: {}", userId);
                 // Get notifications
-                List<Notification> notifications = notificationRepository
-                                .findByRecipientIdOrderByCreatedAtDesc(userId);
+                Page<Notification> notificationPage = notificationRepository
+                                .findByRecipientIdOrderByCreatedAtDesc(userId, pageable);
+                List<Notification> notifications = notificationPage.getContent();
                 if (notifications.isEmpty()) {
                         log.debug("No notifications found for user with id: {}", userId);
-                        return List.of();
+                            return new PageImpl<>(List.of(), pageable, notificationPage.getTotalElements());
                 }
 
                 // 2. Extract IDs, ignoring nulls and duplicates
@@ -168,29 +172,17 @@ public class NotificationService {
                                                 Function.identity()));
 
                 // 5. Build NotificationDTOs
+                log.info("Fetched notifications {} for user with id: {}", notifications.size(), userId);
                 List<NotificationDTO> result = notifications.stream()
                                 .filter(notification -> notification.getWorkspaceId() != null
                                                 && notification.getBoardId() != null
                                                 && workspaceMap.containsKey(notification.getWorkspaceId())
                                                 && boardMap.containsKey(notification.getBoardId()))
-                                .map(notification -> {
-
-                                        WorkspaceDTO workspace = workspaceMap.get(notification.getWorkspaceId());
-
-                                        UserDTO actor = actorMap.get(notification.getActorId());
-
-                                        BoardDTO board = boardMap.get(notification.getBoardId());
-
-                                        return toDTO(
-                                                        notification,
-                                                        actor,
-                                                        workspace,
-                                                        board);
-                                })
+                                .map(notification -> toDTO(notification, actorMap.get(notification.getActorId()),
+                                                workspaceMap.get(notification.getWorkspaceId()),
+                                                boardMap.get(notification.getBoardId())))
                                 .toList();
-
-                log.info("Fetched notifications {} for user with id: {}", notifications.size(), userId);
-                return result;
+                return new PageImpl<>(result, pageable, notificationPage.getTotalElements());
         }
 
         // Get only unread notifications of the authenticated user.

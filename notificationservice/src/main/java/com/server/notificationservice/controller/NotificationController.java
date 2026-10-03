@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import com.server.notificationservice.service.NotificationService;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 
 @RestController
@@ -20,13 +23,14 @@ public class NotificationController {
 
     // Get all notifications belonging to the authenticated user.
     @GetMapping
-    public ResponseEntity<List<NotificationDTO>> getNotifications(
-            @AuthenticationPrincipal Jwt jwt
+    public ResponseEntity<Page<NotificationDTO>> getNotifications(
+            @AuthenticationPrincipal Jwt jwt,
+            @PageableDefault(size = 10) Pageable pageable
     ) {
         Long userId = jwt.getClaim("userId");
 
         return ResponseEntity.ok(
-                notificationService.getNotifications(userId)
+                notificationService.getNotifications(userId, pageable)
         );
     }
 

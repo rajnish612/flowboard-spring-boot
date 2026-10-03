@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -58,14 +60,15 @@ public class ActivityService {
         }
 
         // fetch activities using workspaceId
-        public List<ActivityDTO> getActivitiesByWorkspaceId(Long workspaceId) {
+        public Page<ActivityDTO> getActivitiesByWorkspaceId(Long workspaceId, Pageable pageable) {
                 log.info("Fetching activity for workspace with id: {}", workspaceId);
 
-                List<Activity> activities = activityRepo.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId);
+                Page<Activity> activityPage = activityRepo.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId, pageable);
+                List<Activity> activities = activityPage.getContent();
                 if (activities.isEmpty()) {
                         log.info("No activities found for workspaceId={}", workspaceId);
 
-                        return List.of();
+                        return activityPage.map(activity -> null);
                 }
                 List<Long> boardIds = activities.stream().map(Activity::getBoardId).filter(Objects::nonNull).distinct()
                                 .toList();
@@ -90,16 +93,13 @@ public class ActivityService {
                                                 UserDTO::getId,
                                                 Function.identity()));
 
-                List<ActivityDTO> result = activities.stream()
-                                .map(activity -> toDTO(
-                                                activity,
-                                                usersMapped,
-                                                assignedToUsersMapped,
-                                                boardsMapped))
-                                .toList();
                 log.info("Fetched {} activities for workspaceId={}",
-                                result.size(), workspaceId);
-                return result;
+                                activities.size(), workspaceId);
+                return activityPage.map(activity -> toDTO(
+                                activity,
+                                usersMapped,
+                                assignedToUsersMapped,
+                                boardsMapped));
         }
 
         // for the purpose of converting Activity object into ActivityDTO object

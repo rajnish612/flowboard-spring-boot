@@ -18,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
@@ -114,27 +116,20 @@ public class WorkspaceService {
     }
 
     // Method to get workspaces by ownerId
-    public List<WorkspaceDTO> getWorkspacesByOwnerId(Long ownerId) {
+    public Page<WorkspaceDTO> getWorkspacesByOwnerId(Long ownerId, Pageable pageable) {
         log.info("Fetching workspaces for ownerId={}", ownerId);
 
-        List<Workspace> workspaces = workSpaceRepo.findByOwnerId(ownerId);
+        Page<Workspace> workspaces = workSpaceRepo.findByOwnerId(ownerId, pageable);
         if (workspaces.isEmpty()) {
             log.debug("No workspaces found for ownerId={}", ownerId);
-            return List.of();
+            return workspaces.map(this::toDTO);
         }
-        List<WorkspaceDTO> result = workspaces.stream().map(w -> WorkspaceDTO.builder()
-                .id(w.getId())
-                .name(w.getName())
-                .ownerId(w.getOwnerId())
-                .createdAt(w.getCreatedAt())
-                .updatedAt(w.getUpdatedAt())
-                .build()).toList();
-        log.info("Fetched {} workspaces for ownerId={}", result.size(), ownerId);
-        return result;
+        log.info("Fetched {} workspaces for ownerId={}", workspaces.getNumberOfElements(), ownerId);
+        return workspaces.map(this::toDTO);
     }
 
     // Method to get all the shared workspaces
-    public List<WorkspaceDTO> getSharedWorkspaces(Long userId) {
+    public Page<WorkspaceDTO> getSharedWorkspaces(Long userId, Pageable pageable) {
         log.info("Fetching shared workspaces for userId={}", userId);
 
         List<Long> workspaceIds = workspaceMemberRepo.findByUserId(userId)
@@ -144,43 +139,36 @@ public class WorkspaceService {
 
         if (workspaceIds.isEmpty()) {
             log.debug("No workspace memberships found for userId={}", userId);
-            return List.of();
+            return Page.empty(pageable);
         }
 
-        List<WorkspaceDTO> result = workSpaceRepo.findByIdInAndOwnerIdNot(workspaceIds, userId)
-                .stream()
-                .map(workspace -> WorkspaceDTO.builder()
-                        .id(workspace.getId())
-                        .name(workspace.getName())
-                        .ownerId(workspace.getOwnerId())
-                        .build())
-                .toList();
+        Page<WorkspaceDTO> result = workSpaceRepo.findByIdInAndOwnerIdNot(workspaceIds, userId, pageable)
+                .map(this::toDTO);
         if (result.isEmpty()) {
             log.debug("No shared workspaces found for userId={}", userId);
-            return List.of();
+            return result;
         }
 
         log.info("Fetched {} shared workspaces for userId={}",
-                result.size(), userId);
+                result.getNumberOfElements(), userId);
         return result;
 
     }
 
     // Method to fetch members using workspaceId
-    public List<WorkspaceMembersDTO> getWorkspaceMembersByWorkspaceId(
+    public Page<WorkspaceMembersDTO> getWorkspaceMembersByWorkspaceId(
             Long workspaceId,
-            Long userId) {
+            Long userId,
+            Pageable pageable) {
         log.info("Fetching workspace members: workspaceId={}, userId={}",
                 workspaceId, userId);
-        List<WorkspaceMembers> members = workspaceMemberRepo
-                .findByWorkspaceId(workspaceId)
-                .stream()
-                .toList();
+        Page<WorkspaceMembers> memberPage = workspaceMemberRepo.findByWorkspaceId(workspaceId, pageable);
+        List<WorkspaceMembers> members = memberPage.getContent();
 
         if (members.isEmpty()) {
             log.debug("No members found for workspaceId={}", workspaceId);
 
-            return List.of();
+            return memberPage.map(member -> null);
         }
 
         List<Long> userIds = members.stream()
@@ -194,8 +182,7 @@ public class WorkspaceService {
                         UserDTO::getId,
                         user -> user));
 
-        List<WorkspaceMembersDTO> result = members.stream()
-                .map(member -> {
+        return memberPage.map(member -> {
                     UserDTO user = userMap.get(member.getUserId());
 
                     return WorkspaceMembersDTO.builder()
@@ -207,11 +194,7 @@ public class WorkspaceService {
                             .avatar(user.getAvatar())
                             .role(member.getRole())
                             .build();
-                })
-                .toList();
-        log.info("Fetched {} workspace members: workspaceId={}, userId={}",
-                result.size(), workspaceId, userId);
-        return result;
+                });
     }
 
     // Method to add member to the workspace
@@ -305,29 +288,32 @@ public class WorkspaceService {
     }
 
     //Method to find both users workspaces as shared workspaces using workspace name and userId
-    public List<WorkspaceDTO> findWorkspaceByNameStartingWith(String workspaceName, Boolean shared, Long userId) {
+    public Page<WorkspaceDTO> findWorkspaceByNameStartingWith(String workspaceName, Boolean shared, Long userId, Pageable pageable) {
         log.info(
                 "Searching workspaces: userId={}, workspaceName={}, shared={}",
                 userId,
                 workspaceName,
                 shared
         );
-        List<Workspace> workspaces;
+        Page<Workspace> workspaces;
         if (!shared) {
-            workspaces = workSpaceRepo.findByNameStartingWithIgnoreCaseAndOwnerId(workspaceName, userId);
+            workspaces = workSpaceRepo.findByNameStartingWithIgnoreCaseAndOwnerId(workspaceName, userId, pageable);
         } else {
             List<Long> workspaceIds =
                     workspaceMemberRepo.findByUserIdAndRole(userId, WorkspaceRole.MEMBER).stream().map(WorkspaceMembers::getWorkspaceId).toList();
 
 
-            workspaces =
-                    workSpaceRepo.findByIdInAndNameStartingWithIgnoreCase(
-                            workspaceIds, workspaceName
-                    );
+            workspaces = workSpaceRepo.findByIdInAndNameStartingWithIgnoreCase(
+                            workspaceIds, workspaceName, pageable);
 
 
         }
-        return workspaces.stream().map(w -> WorkspaceDTO.builder().name(w.getName()).ownerId(w.getOwnerId()).updatedAt(w.getUpdatedAt()).createdAt(w.getCreatedAt()).build()).toList();
+        return workspaces.map(this::toDTO);
+    }
+
+    private WorkspaceDTO toDTO(Workspace w) {
+        return WorkspaceDTO.builder().id(w.getId()).name(w.getName()).ownerId(w.getOwnerId())
+                .createdAt(w.getCreatedAt()).updatedAt(w.getUpdatedAt()).build();
     }
 
 

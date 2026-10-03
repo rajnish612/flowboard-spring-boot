@@ -80,7 +80,7 @@ const ContentPanel: React.FC<{
 
   // ── No workspace selected ────────────────────────────────────────────────
   return (
-    <div className="relative flex h-screen min-h-0 min-w-0 flex-1 flex-col bg-slate-50">
+    <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-slate-50">
       {/* Workspace Header */}
       <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3.5 sm:gap-4 sm:px-8 sm:py-5">
         <button
@@ -196,9 +196,24 @@ const ContentPanel: React.FC<{
         <NotificationToast />
       </div>
 
-      {/* if workspace not selected */}
-      {!workspaceId && (
-        <div className="relative flex min-h-screen  flex-1b flex-col items-center justify-center gap-6 bg-slate-50 px-8">
+      {workspaceId ? (
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto px-8 py-7">
+          {loading ? (
+            <div className="flex min-h-50 items-center justify-center">
+              <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-b-indigo-600"></div>
+            </div>
+          ) : (
+            <Outlet
+              context={{
+                workspace,
+                setWorkspace,
+                refreshWorkspace: fetchWorkspace,
+              }}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-6 bg-slate-50 px-8">
           {/* Illustration */}
           <div className="w-24 h-24 rounded-3xl bg-linear-to-br from-violet-100 to-indigo-100 flex items-center justify-center shadow-inner">
             <svg
@@ -233,23 +248,6 @@ const ContentPanel: React.FC<{
           </div>
         </div>
       )}
-
-      {/* Main Content Area */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-8 py-7">
-        {loading ? (
-          <div className="flex min-h-50 items-center justify-center">
-            <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-b-indigo-600"></div>
-          </div>
-        ) : (
-          <Outlet
-            context={{
-              workspace,
-              setWorkspace,
-              refreshWorkspace: fetchWorkspace,
-            }}
-          />
-        )}
-      </div>
     </div>
   );
 };
